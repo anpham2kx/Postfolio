@@ -787,9 +787,127 @@ p {
     url("/images/Background_Halloween_Cozy_Cottage.jpg") center / cover
       no-repeat;
 }
-.falling-leaves {
-  position: absolute;
+.falling-leaves,
+.halloween-visitors {
+  position: fixed;
   inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  overflow: hidden;
+}
+.halloween-visitors {
+  z-index: 21;
+}
+.ghost-pass {
+  position: absolute;
+  left: var(--ghost-left);
+  top: var(--ghost-top);
+  width: var(--ghost-size);
+  opacity: 0;
+  animation: ghost-visit var(--ghost-duration) var(--ghost-delay) linear
+    infinite;
+}
+.ghost-shape {
+  display: block;
+  width: 100%;
+  animation: ghost-hover 3.8s ease-in-out infinite alternate;
+}
+@keyframes ghost-visit {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 35px, 0) scale(0.8);
+  }
+  7% {
+    opacity: 0.65;
+  }
+  17% {
+    opacity: 0.2;
+  }
+  23% {
+    opacity: 0.6;
+  }
+  36%,
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--ghost-drift), -100px, 0) scale(1.1);
+  }
+}
+@keyframes ghost-hover {
+  from {
+    transform: translateY(-8px) rotate(-7deg);
+  }
+  to {
+    transform: translateY(10px) rotate(7deg);
+  }
+}
+.bat-pass {
+  position: absolute;
+  left: -100px;
+  top: var(--bat-top);
+  width: var(--bat-size);
+  --bat-travel: calc(100vw + 200px);
+  opacity: 0;
+  animation: bat-crossing 38s var(--bat-delay) linear infinite;
+}
+.bat-pass-reverse {
+  left: auto;
+  right: -100px;
+  --bat-travel: calc(-100vw - 200px);
+}
+.bat-shape {
+  display: block;
+  width: 100%;
+}
+.bat-wing {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: bat-flap 0.28s ease-in-out infinite alternate;
+}
+@keyframes bat-crossing {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+  2% {
+    opacity: 0.9;
+  }
+  12% {
+    transform: translate3d(calc(var(--bat-travel) * 0.5), -45px, 0);
+  }
+  23% {
+    opacity: 0.9;
+  }
+  26%,
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--bat-travel), 30px, 0);
+  }
+}
+@keyframes bat-flap {
+  from {
+    transform: scaleY(1);
+  }
+  to {
+    transform: scaleY(0.35);
+  }
+}
+:root[data-ambient-paused="true"] .ghost-pass,
+:root[data-ambient-paused="true"] .ghost-shape,
+:root[data-ambient-paused="true"] .bat-pass,
+:root[data-ambient-paused="true"] .bat-wing {
+  animation-play-state: paused;
+}
+@media (max-width: 760px) {
+  .ghost-pass {
+    width: calc(var(--ghost-size) * 0.7);
+  }
+  .ghost-pass:nth-child(3),
+  .bat-pass:nth-last-child(-n + 2) {
+    display: none;
+  }
+  .bat-pass {
+    width: calc(var(--bat-size) * 0.75);
+  }
 }
 .falling-leaf {
   position: absolute;
@@ -944,7 +1062,8 @@ p {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .falling-leaves {
+  .falling-leaves,
+  .halloween-visitors {
     display: none;
   }
   .vinyl-record {
@@ -953,6 +1072,8 @@ p {
 }
 @media print {
   .autumn-scene,
+  .falling-leaves,
+  .halloween-visitors,
   .music-player {
     display: none !important;
   }

@@ -102,7 +102,7 @@ export function BackgroundMusic() {
     mounted.current = true;
     const audio = audioRef.current;
     if (!audio) return;
-    audio.volume = 0.35;
+    audio.volume = 1;
     const visibility = () => {
       document.documentElement.dataset.ambientPaused = String(document.hidden);
     };
