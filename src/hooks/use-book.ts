@@ -7,6 +7,7 @@ import {
   gestureAxis,
   shouldCommit,
   spreadStart,
+  turnPath,
   type Direction,
 } from "@/lib/book-machine";
 
@@ -22,16 +23,15 @@ interface Gesture {
 }
 
 /** All frame updates go to DOM transforms. React renders only at transaction boundaries. */
-export function useBook(total: number, simple: boolean) {
+export function useBook(total: number) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const machineRef = useRef(new BookMachine(total));
+  const machineRef = useRef(new BookMachine(total, 1));
   const offsetsRef = useRef(new Map<number, number>());
   const navigateRef = useRef<(direction: Direction, target?: number) => void>(
     () => {},
   );
   const [snapshot, setSnapshot] = useState({
-    anchor: 0,
-    mode: 1 as 1 | 2,
+    anchor: 1,
     busy: false,
   });
 
@@ -49,15 +49,15 @@ export function useBook(total: number, simple: boolean) {
     let frame = 0;
     let generation = 0;
     let disposed = false;
+    let pendingPages: number[] = [];
+    let multiTurn = false;
+    let suppressDragClick = false;
     const offsets = offsetsRef.current;
-    const flat = simple || !CSS.supports("transform-style", "preserve-3d");
-    root.dataset.simple = String(flat);
 
     function publish() {
       if (!disposed)
         setSnapshot({
           anchor: machine.anchor,
-          mode: machine.mode,
           busy: machine.phase !== "idle",
         });
     }
@@ -72,15 +72,21 @@ export function useBook(total: number, simple: boolean) {
           );
       }
     }
+    function rememberScroll() {
+      // Visibility/resize can run before the browser delivers its queued scroll event.
+      for (const page of pages) {
+        if (page.hidden) continue;
+        const content = page.querySelector<HTMLElement>(".page-content");
+        if (content) offsets.set(Number(page.dataset.page), content.scrollTop);
+      }
+    }
     function show(indices: number[]) {
       pages.forEach((page, index) => {
         const visible = indices.includes(index);
         page.hidden = !visible;
         page.inert = !visible;
-        page.style.gridColumn =
-          machine.mode === 2 ? String((index % 2) + 1) : "1";
-        page.dataset.side =
-          machine.mode === 2 && index % 2 === 0 ? "left" : "right";
+        page.style.gridColumn = String((index % 2) + 1);
+        page.dataset.side = index % 2 === 0 ? "left" : "right";
         if (visible) {
           const content = page.querySelector<HTMLElement>(".page-content");
           if (content) content.scrollTop = offsets.get(index) ?? 0;
@@ -89,10 +95,9 @@ export function useBook(total: number, simple: boolean) {
       updateScrollCues();
     }
     function sync() {
-      root!.dataset.mode = String(machine.mode);
       root!.dataset.phase = machine.phase;
-      const start = spreadStart(machine.anchor, machine.mode);
-      show(machine.mode === 2 ? [start, start + 1] : [start]);
+      const start = spreadStart(machine.anchor);
+      show([start, start + 1]);
       layer!.replaceChildren();
       layer!.hidden = true;
       publish();
@@ -104,8 +109,11 @@ export function useBook(total: number, simple: boolean) {
         root!.releasePointerCapture(id);
     }
     function cancel() {
+      rememberScroll();
       generation++;
       cancelAnimationFrame(frame);
+      pendingPages = [];
+      multiTurn = false;
       machine.finish(false);
       release();
       sync();
@@ -134,10 +142,11 @@ export function useBook(total: number, simple: boolean) {
     function prepare() {
       const turn = machine.turn;
       if (!turn) return;
-      const dest = spreadStart(turn.to, machine.mode);
+      rememberScroll();
+      const dest = spreadStart(turn.to);
       const forward = turn.direction === 1;
-      const outgoing = turn.from + (machine.mode === 2 && forward ? 1 : 0);
-      const back = dest + (machine.mode === 2 && !forward ? 1 : 0);
+      const outgoing = turn.from + (forward ? 1 : 0);
+      const back = dest + (forward ? 0 : 1);
       const sheet = document.createElement("div");
       sheet.className = "turn-sheet";
       sheet.append(
@@ -148,15 +157,7 @@ export function useBook(total: number, simple: boolean) {
       layer!.dataset.direction = forward ? "next" : "prev";
       layer!.hidden = false;
       // Keep the opposite old leaf, expose the destination beneath the turning leaf.
-      show(
-        machine.mode === 2 && !flat
-          ? forward
-            ? [turn.from, dest + 1]
-            : [dest, turn.from + 1]
-          : machine.mode === 2
-            ? [dest, dest + 1]
-            : [dest],
-      );
+      show(forward ? [turn.from, dest + 1] : [dest, turn.from + 1]);
       [outgoing, back].forEach((index, face) => {
         const scroller =
           sheet.children[face]?.querySelector<HTMLElement>(".page-content");
@@ -168,19 +169,25 @@ export function useBook(total: number, simple: boolean) {
     function paint(progress: number) {
       const sheet = layer!.firstElementChild as HTMLElement | null;
       if (!sheet || !machine.turn) return;
-      if (flat) {
-        sheet.style.transform = `translateX(${-machine.turn.direction * progress * 24}px)`;
-        sheet.style.opacity = String(1 - progress);
-      } else {
-        sheet.style.transform = `rotateY(${-machine.turn.direction * progress * 180}deg)`;
-        sheet.style.setProperty(
-          "--turn-shade",
-          String(Math.sin(progress * Math.PI) * 0.16),
-        );
-      }
+      sheet.style.transform = `rotateY(${-machine.turn.direction * progress * 180}deg)`;
+      sheet.style.setProperty(
+        "--turn-shade",
+        String(Math.sin(progress * Math.PI) * 0.16),
+      );
     }
+
     function finish(commit: boolean, focus: boolean) {
       machine.finish(commit);
+      const next = commit ? pendingPages.shift() : undefined;
+      if (next !== undefined) {
+        machine.begin(next > machine.anchor ? 1 : -1, "settling", next);
+        prepare();
+        paint(0);
+        settle(true, 0, focus);
+        return;
+      }
+      pendingPages = [];
+      multiTurn = false;
       sync();
       if (focus && commit)
         pages[machine.anchor]?.focus({ preventScroll: true });
@@ -194,7 +201,7 @@ export function useBook(total: number, simple: boolean) {
       const target = commit ? 1 : 0;
       const duration = motion.matches
         ? 0
-        : Math.max(110, Math.abs(target - from) * (flat ? 180 : 480));
+        : Math.max(110, Math.abs(target - from) * (multiTurn ? 320 : 480));
       if (duration === 0) {
         finish(commit, focus);
         return;
@@ -211,13 +218,20 @@ export function useBook(total: number, simple: boolean) {
     }
     function navigate(direction: Direction, target?: number) {
       if (machine.phase !== "idle" || gesture) return;
-      if (!machine.begin(direction, "settling", target)) {
+      const path =
+        target === undefined ? [] : turnPath(machine.anchor, target, total);
+      const first = path.shift();
+      const turnDirection =
+        first === undefined ? direction : first > machine.anchor ? 1 : -1;
+      if (!machine.begin(turnDirection, "settling", first)) {
         if (target !== undefined) {
           publish();
           pages[machine.anchor]?.focus({ preventScroll: true });
         }
         return;
       }
+      pendingPages = path;
+      multiTurn = path.length > 0;
       prepare();
       paint(0);
       settle(true, 0, true);
@@ -225,9 +239,13 @@ export function useBook(total: number, simple: boolean) {
     navigateRef.current = navigate;
 
     function down(event: PointerEvent) {
+      if (event.isPrimary && event.button === 0) suppressDragClick = false;
       if (
         !event.isPrimary ||
         event.button !== 0 ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
         machine.phase !== "idle" ||
         gesture
       )
@@ -236,20 +254,37 @@ export function useBook(total: number, simple: boolean) {
       if (!(target instanceof Element)) return;
       if (
         target.closest(
-          "a, button, input, textarea, select, label, [contenteditable], [data-no-drag]",
+          "a, button, input, textarea, select, label, [contenteditable], [data-no-drag], [role='button'], [role='textbox'], [role='slider'], [role='combobox']",
         )
       )
         return;
-      // Mouse/pen use a dedicated margin. Text selection on the paper stays native.
-      if (
-        event.pointerType !== "touch" &&
-        !target.closest("[data-drag-handle]")
-      )
+      if (event.shiftKey) {
+        // Firefox needs an initial caret for Shift-drag on a fresh document.
+        // Once established, the browser extends the selection natively.
+        const selection = window.getSelection();
+        if (event.pointerType !== "touch" && selection?.rangeCount === 0) {
+          const caret = document.caretPositionFromPoint?.(
+            event.clientX,
+            event.clientY,
+          );
+          if (caret && root!.contains(caret.offsetNode))
+            selection.collapse(caret.offsetNode, caret.offset);
+        }
         return;
-      if (window.getSelection()?.toString().trim()) return;
-      // WebKit can start a native text selection from a margin while the leaf
-      // beneath it changes. Only the dedicated mouse/pen handle prevents default.
-      if (event.pointerType !== "touch") event.preventDefault();
+      }
+      // Keep native scrollbars usable, including when a mouse starts on the thumb.
+      const scroller = target.closest<HTMLElement>(".page-content");
+      if (scroller && scroller.offsetWidth > scroller.clientWidth) {
+        const box = scroller.getBoundingClientRect();
+        if (
+          event.clientX >=
+          box.left + scroller.clientLeft + scroller.clientWidth
+        )
+          return;
+      }
+      // The whole page can turn. Shift-drag and multi-click retain native text
+      // selection. Do not prevent pointerdown: that would suppress mousedown,
+      // including the click count needed to recognize double/triple clicks.
       gesture = {
         id: event.pointerId,
         x: event.clientX,
@@ -261,8 +296,32 @@ export function useBook(total: number, simple: boolean) {
         direction: null,
       };
     }
+    function selectText(event: MouseEvent) {
+      if (!gesture || gesture.direction) return;
+      if (event.detail > 1) release();
+      // Stop native mouse selection capture before it starts. In Firefox it can
+      // survive a resize when the release lands outside the resized viewport.
+      // Shift and interactive controls never create a gesture, so stay native.
+      else event.preventDefault();
+    }
+    function nativeDrag(event: DragEvent) {
+      // Images and selected text otherwise start HTML drag-and-drop and cancel
+      // the pointer stream before the page has a chance to follow the hand.
+      if (gesture) event.preventDefault();
+    }
+    function dragClick(event: MouseEvent) {
+      if (suppressDragClick && event.detail > 0) {
+        suppressDragClick = false;
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
     function move(event: PointerEvent) {
       if (!gesture || gesture.id !== event.pointerId) return;
+      if (event.pointerType !== "touch" && (event.buttons & 1) === 0) {
+        cancel();
+        return;
+      }
       const dx = event.clientX - gesture.x;
       const dy = event.clientY - gesture.y;
       if (!gesture.direction) {
@@ -278,6 +337,10 @@ export function useBook(total: number, simple: boolean) {
           return;
         }
         gesture.direction = direction;
+        suppressDragClick = true;
+        const selection = window.getSelection();
+        if (selection?.anchorNode && root!.contains(selection.anchorNode))
+          selection.removeAllRanges();
         root!.setPointerCapture(event.pointerId);
         prepare();
       }
@@ -289,7 +352,7 @@ export function useBook(total: number, simple: boolean) {
       gesture.lastX = event.clientX;
       gesture.lastTime = event.timeStamp;
       const distance = -dx * gesture.direction;
-      const width = root!.clientWidth / machine.mode;
+      const width = root!.clientWidth / 2;
       gesture.progress = clamp(distance / Math.max(width * 0.8, 1), 0, 1);
       cancelAnimationFrame(frame);
       const progress = gesture.progress;
@@ -309,9 +372,7 @@ export function useBook(total: number, simple: boolean) {
         -(event.clientX - x) * direction,
       );
       // Clear before releasing capture, so lostpointercapture cannot cancel a settling turn.
-      const id = gesture.id;
-      gesture = null;
-      if (root!.hasPointerCapture(id)) root!.releasePointerCapture(id);
+      release();
       settle(commit, progress);
     }
     function pointerCancel(event: PointerEvent) {
@@ -326,6 +387,16 @@ export function useBook(total: number, simple: boolean) {
     }
     function key(event: KeyboardEvent) {
       const target = event.target;
+      if (
+        event.key === "Escape" &&
+        !event.defaultPrevented &&
+        !event.isComposing &&
+        (machine.phase !== "idle" || gesture)
+      ) {
+        event.preventDefault();
+        cancel();
+        return;
+      }
       if (
         event.defaultPrevented ||
         event.ctrlKey ||
@@ -346,7 +417,7 @@ export function useBook(total: number, simple: boolean) {
       if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
         event.preventDefault();
         if (!event.repeat) navigate(event.key === "ArrowRight" ? 1 : -1);
-      } else if (event.key === "Escape" && machine.phase !== "idle") cancel();
+      }
     }
     function track(event: Event) {
       const element = event.target;
@@ -385,8 +456,6 @@ export function useBook(total: number, simple: boolean) {
       previousWidth = width;
       previousHeight = height;
       cancel();
-      machine.resize(width >= 860 ? 2 : 1);
-      sync();
       // Keep focus on the actual reading page, if a hidden leaf held focus.
       const active = document.activeElement;
       if (active instanceof HTMLElement && active.closest(".book-page[hidden]"))
@@ -402,6 +471,9 @@ export function useBook(total: number, simple: boolean) {
     root.dataset.ready = "true";
     resize();
     root.addEventListener("pointerdown", down);
+    root.addEventListener("mousedown", selectText);
+    root.addEventListener("dragstart", nativeDrag);
+    root.addEventListener("click", dragClick, true);
     window.addEventListener("pointermove", move, { passive: false });
     window.addEventListener("pointerup", up);
     window.addEventListener("pointercancel", pointerCancel);
@@ -424,6 +496,9 @@ export function useBook(total: number, simple: boolean) {
       observer.disconnect();
       contentObserver.disconnect();
       root.removeEventListener("pointerdown", down);
+      root.removeEventListener("mousedown", selectText);
+      root.removeEventListener("dragstart", nativeDrag);
+      root.removeEventListener("click", dragClick, true);
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
       window.removeEventListener("pointercancel", pointerCancel);
@@ -438,7 +513,7 @@ export function useBook(total: number, simple: boolean) {
       document.removeEventListener("visibilitychange", visibility);
       motion.removeEventListener("change", cancel);
     };
-  }, [simple]);
+  }, [total]);
 
   const navigate = useCallback(
     (direction: Direction, target?: number) =>

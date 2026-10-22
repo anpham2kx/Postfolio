@@ -124,7 +124,7 @@ export function ContactForm() {
             name="message"
             placeholder="Viết nội dung..."
             required
-            minLength={10}
+            minLength={1}
             maxLength={5000}
             rows={4}
             value={values.message}
@@ -133,7 +133,7 @@ export function ContactForm() {
             aria-describedby={errors.message ? "message-error" : "message-help"}
           />
           <div className="field-meta">
-            <span id="message-help">Từ 10 đến 5.000 ký tự</span>
+            <span id="message-help">Từ 1 đến 5.000 ký tự</span>
             <span>{values.message.length}/5000</span>
           </div>
           {errors.message && (

@@ -5,97 +5,98 @@ import {
   gestureAxis,
   shouldCommit,
   spreadStart,
+  turnPath,
 } from "../../src/lib/book-machine";
 
-describe("canonical reading position", () => {
-  it("clamps at the first/last page in both layouts", () => {
-    for (const mode of [1, 2] as const) {
-      expect(adjacentPage(0, -1, mode, 8)).toBe(0);
-      expect(adjacentPage(7, 1, mode, 8)).toBe(mode === 1 ? 7 : 6);
-    }
+describe("two-page reading and jump paths", () => {
+  it("turns all three sheets to reach contact and returns in order", () => {
+    expect(turnPath(1, 6, 8)).toEqual([2, 4, 6]);
+    expect(turnPath(6, 1, 8)).toEqual([4, 2, 1]);
   });
-  it("preserves an odd reading page through repeated mode changes", () => {
-    const book = new BookMachine(8);
-    book.begin(1, "settling", 5);
-    book.finish(true);
-    for (let i = 0; i < 20; i++) {
-      book.resize(2);
-      expect(book.anchor).toBe(5);
-      expect(spreadStart(book.anchor, 2)).toBe(4);
-      book.resize(1);
-      expect(book.anchor).toBe(5);
-    }
+  it("keeps the exact reading page when moving to the same spread", () => {
+    expect(turnPath(2, 3, 8)).toEqual([3]);
+    expect(turnPath(6, 7, 8)).toEqual([7]);
   });
-  it("tracks the right-hand leaf that is being read", () => {
+  it("clamps jump destinations to the covers", () => {
+    expect(turnPath(1, 99, 8)).toEqual([2, 4, 7]);
+    expect(turnPath(5, -9, 8)).toEqual([2, 0]);
+  });
+  it("opens with the introduction beside the front cover", () => {
+    const book = new BookMachine(8, 1);
+    expect(book.anchor).toBe(1);
+    expect(spreadStart(book.anchor)).toBe(0);
+    expect(book.begin(-1)).toBeNull();
+    expect(book.phase).toBe("idle");
+  });
+  it("stops at the front and back cover spreads", () => {
+    expect(adjacentPage(1, -1, 8)).toBe(0);
+    expect(adjacentPage(6, 1, 8)).toBe(6);
+    expect(adjacentPage(7, 1, 8)).toBe(6);
+  });
+  it("tracks either visible leaf and ignores hidden pages", () => {
     const book = new BookMachine(8);
-    book.resize(2);
     book.focus(1);
     expect(book.anchor).toBe(1);
-    book.focus(7);
+    book.focus(6);
     expect(book.anchor).toBe(1);
-    book.resize(1);
-    expect(book.anchor).toBe(1);
+    book.focus(0);
+    expect(book.anchor).toBe(0);
   });
-  it("handles an odd total page count", () => {
-    expect(adjacentPage(4, 1, 2, 7)).toBe(6);
-    expect(adjacentPage(6, 1, 2, 7)).toBe(6);
+  it("handles a trailing spread with an odd number of pages", () => {
+    expect(adjacentPage(4, 1, 7)).toBe(6);
+    expect(adjacentPage(6, 1, 7)).toBe(6);
   });
 });
 describe("turn transaction", () => {
   it("ignores overlapping directions and jumps, committing exactly once", () => {
     const book = new BookMachine(8);
-    book.resize(2);
     expect(book.begin(1)?.to).toBe(2);
-    for (let i = 0; i < 100; i++) {
-      expect(book.begin(i % 2 ? 1 : -1, "settling", 7)).toBeNull();
-    }
+    for (let i = 0; i < 100; i++)
+      expect(book.begin(i % 2 ? 1 : -1, "settling", 6)).toBeNull();
     book.finish(true);
     book.finish(true);
     expect(book.anchor).toBe(2);
     expect(book.phase).toBe("idle");
   });
-  it("a cancelled drag never advances and next navigation still works", () => {
+  it("a cancelled drag never advances and navigation remains usable", () => {
     const book = new BookMachine(8);
     book.begin(1, "dragging");
     book.settle();
     book.finish(false);
     expect(book.anchor).toBe(0);
-    expect(book.phase).toBe("idle");
     book.begin(1);
     book.finish(true);
-    expect(book.anchor).toBe(1);
+    expect(book.anchor).toBe(2);
   });
-  it("resize cancels an in-flight turn without changing reading content", () => {
+  it("cancelling during resize keeps the last completed reading page", () => {
     const book = new BookMachine(8);
     book.begin(1, "settling", 3);
     book.finish(true);
     book.begin(1, "dragging");
-    book.resize(2);
+    book.finish(false);
     expect(book.anchor).toBe(3);
     expect(book.turn).toBeNull();
     expect(book.phase).toBe("idle");
   });
   it("same-spread navigation changes the anchor without animating", () => {
     const book = new BookMachine(8);
-    book.resize(2);
     expect(book.begin(1, "settling", 1)).toBeNull();
     expect(book.anchor).toBe(1);
     expect(book.phase).toBe("idle");
   });
-  it("a long sequence stays ordered, bounded and unlocks after cancellation", () => {
+  it("a long sequence stays ordered and bounded after cancellation", () => {
     const book = new BookMachine(8);
     let seed = 23;
     for (let i = 0; i < 1000; i++) {
       seed = (seed * 16807) % 2147483647;
       const direction = seed % 2 ? 1 : -1;
       const from = book.anchor;
-      const expected = adjacentPage(from, direction, book.mode, 8);
+      const expected = adjacentPage(from, direction, 8);
       book.begin(direction, "dragging");
       const commit = seed % 3 !== 0;
       book.finish(commit);
       expect(book.anchor).toBe(commit ? expected : from);
       expect(book.phase).toBe("idle");
-      if (i % 10 === 0) book.resize(book.mode === 1 ? 2 : 1);
     }
   });
 });

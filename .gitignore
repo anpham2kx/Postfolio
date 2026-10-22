@@ -9,3 +9,7 @@ playwright-report/
 test-results/
 .cache/
 *.log
+
+# Root media duplicates (stored in public/)
+/Background_Halloween_Cozy_Cottage.jpg
+/*.mp3

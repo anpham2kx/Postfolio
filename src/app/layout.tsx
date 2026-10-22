@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   icons: { icon: "/icon.png" },
   openGraph: {
     title: "Pham Thanh An — The Portfolio Book",
-    description: "Một cuốn sách. Một hành trình. Portfolio của Phạm Thanh An.",
+    description: "Portfolio của Phạm Thanh An, Software Engineer.",
     images: [
       {
         url: "/images/avatar.webp",
@@ -38,10 +38,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </a>
         {children}
         <noscript>
-          <style>{`.book-page{display:flex!important;position:relative!important;height:auto!important;min-height:500px}.book{display:block!important;height:auto!important}.page-content{overflow:visible!important}.chapter-tabs,.book-controls,.reading-hint,.view-toggle,.drag-margin{display:none!important}`}</style>
+          <style>{`.book-page{display:flex!important;position:relative!important;height:auto!important;min-height:500px}.book{display:block!important;height:auto!important}.page-content{overflow:visible!important}.book-controls,.music-player{display:none!important}`}</style>
           <p className="noscript-note">
             JavaScript đang tắt. Bạn vẫn có thể đọc đầy đủ nội dung theo chiều
-            dọc; form và hiệu ứng lật sách cần JavaScript.
+            dọc; form, nhạc nền và hiệu ứng lật sách cần JavaScript.
           </p>
         </noscript>
       </body>

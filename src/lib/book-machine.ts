@@ -1,5 +1,4 @@
 export type Direction = -1 | 1;
-export type PageMode = 1 | 2;
 export type TurnPhase = "idle" | "dragging" | "settling";
 export interface Turn {
   from: number;
@@ -10,20 +9,32 @@ export interface Turn {
 export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
-export function spreadStart(anchor: number, mode: PageMode): number {
-  return Math.floor(anchor / mode) * mode;
+export function spreadStart(anchor: number): number {
+  return Math.floor(anchor / 2) * 2;
 }
 export function adjacentPage(
   anchor: number,
   direction: Direction,
-  mode: PageMode,
   total: number,
 ): number {
-  return clamp(
-    spreadStart(anchor, mode) + direction * mode,
-    0,
-    Math.floor((total - 1) / mode) * mode,
-  );
+  return clamp(spreadStart(anchor) + direction * 2, 0, spreadStart(total - 1));
+}
+
+/** Visit every intervening leaf/spread, retaining the exact requested reading page. */
+export function turnPath(
+  anchor: number,
+  target: number,
+  total: number,
+): number[] {
+  const destination = clamp(target, 0, total - 1);
+  const start = spreadStart(anchor);
+  const end = spreadStart(destination);
+  if (start === end) return [destination];
+  const step = end > start ? 2 : -2;
+  const path: number[] = [];
+  for (let page = start + step; page !== end; page += step) path.push(page);
+  path.push(destination);
+  return path;
 }
 export function gestureAxis(
   dx: number,
@@ -45,22 +56,26 @@ export function shouldCommit(
 /** Synchronous lock: repeated input cannot create overlapping turn transactions. */
 export class BookMachine {
   anchor = 0;
-  mode: PageMode = 1;
   phase: TurnPhase = "idle";
   turn: Turn | null = null;
-  constructor(readonly total: number) {}
+  constructor(
+    readonly total: number,
+    initialPage = 0,
+  ) {
+    this.anchor = clamp(initialPage, 0, total - 1);
+  }
   begin(
     direction: Direction,
     phase: "dragging" | "settling" = "settling",
     target?: number,
   ): Turn | null {
     if (this.phase !== "idle") return null;
-    const from = spreadStart(this.anchor, this.mode);
+    const from = spreadStart(this.anchor);
     const to =
       target === undefined
-        ? adjacentPage(this.anchor, direction, this.mode, this.total)
+        ? adjacentPage(this.anchor, direction, this.total)
         : clamp(target, 0, this.total - 1);
-    if (spreadStart(to, this.mode) === from) {
+    if (spreadStart(to) === from) {
       this.anchor = to;
       return null;
     }
@@ -76,15 +91,8 @@ export class BookMachine {
     this.turn = null;
     this.phase = "idle";
   }
-  resize(mode: PageMode): void {
-    this.finish(false);
-    this.mode = mode;
-  }
   focus(page: number): void {
-    if (
-      this.phase === "idle" &&
-      spreadStart(page, this.mode) === spreadStart(this.anchor, this.mode)
-    )
+    if (this.phase === "idle" && spreadStart(page) === spreadStart(this.anchor))
       this.anchor = page;
   }
 }

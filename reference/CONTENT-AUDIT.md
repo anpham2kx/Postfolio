@@ -22,7 +22,7 @@ Trình đọc web không truy cập được URL, nhưng tải HTTPS trực ti�
 - Điện thoại: <https://zalo.me/0375480845> (UI mới ghi thêm Zalo để diễn đạt đúng đích đến).
 - GitHub: <https://github.com/AnPham1820>
 
-Telegram trên nguồn chỉ trỏ tới trang chung, không có username. Giữ đúng URL, không đoán tài khoản. Không đăng nhập hoặc kiểm chứng quyền sở hữu các tài khoản ngoài website.
+Telegram trên nguồn chỉ trỏ tới trang chung, không có username. Sau bản bàn giao đầu, chủ project đã sửa dữ liệu thành `https://t.me/anpham2kx` và GitHub thành `https://github.com/anpham2kx`; lần chỉnh giao diện này giữ nguyên các cập nhật đó. Không đăng nhập hoặc kiểm chứng quyền sở hữu tài khoản.
 
 ## Ảnh
 
@@ -34,8 +34,8 @@ Telegram trên nguồn chỉ trỏ tới trang chung, không có username. Giữ
 
 ## Các khác biệt có chủ đích
 
-- Thêm mục lục, trang kết nối, nhãn điều hướng, lời dẫn biên tập, thông báo mục dự án trống; không thêm thành tích, dự án, kinh nghiệm hoặc dữ liệu cá nhân.
-- Sắp xếp thành 8 trang: Giới thiệu, Mục lục, Sở thích, Kỹ năng, Học vấn, Dự án, Kết nối, Liên hệ.
+- Theo yêu cầu chỉnh sửa, bỏ các lời dẫn trang trí, trang mục lục riêng và tab số; giữ nút chuyển nhanh ngay trong giới thiệu và hai mũi tên điều hướng. Không bỏ thông tin gốc hoặc thêm dữ liệu cá nhân.
+- Theo yêu cầu mới, bỏ trang Kết nối (liên kết vẫn có ở Giới thiệu). Sách gồm 2 bìa và 6 trang: Giới thiệu, Sở thích, Kỹ năng, Học vấn, Dự án, Liên hệ. Cặp đầu có bìa trước trái/giới thiệu phải; cặp cuối có liên hệ trái/bìa sau phải. Điện thoại cũng hiển thị hai trang.
 - Service/template EmailJS sử dụng đúng giá trị người dùng yêu cầu, thay cho giá trị cũ trong bundle nguồn.
 - Mã nguồn gốc có một hàm tải CV mô phỏng, nhưng không render nút CV và không cung cấp file. Không tạo CV hoặc liên kết tải giả.
 - Hai script quảng cáo bên thứ ba trong HTML gốc không phải nội dung portfolio và không được nhúng vào ứng dụng mới.

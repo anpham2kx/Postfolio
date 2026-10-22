@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { blockBackgroundMusic } from "./media-helpers";
 
 async function ready(page: Page) {
   await page.goto("/");
@@ -9,13 +10,10 @@ async function ready(page: Page) {
 async function idle(page: Page) {
   await expect(page.locator(".book")).toHaveAttribute("data-phase", "idle");
 }
-async function mode(page: Page) {
-  return Number(await page.locator(".book").getAttribute("data-mode"));
-}
 async function goContact(page: Page) {
-  await page.getByRole("link", { name: "Liên hệ với An" }).click();
+  await page.getByRole("link", { name: "Liên hệ", exact: true }).click();
   await idle(page);
-  await expect(page.locator("#page-7")).toBeVisible();
+  await expect(page.locator("#page-6")).toBeVisible();
 }
 async function drag(page: Page, distance: number, pause = 0) {
   const box = await page.locator(".book").boundingBox();
@@ -30,28 +28,29 @@ async function drag(page: Page, distance: number, pause = 0) {
 }
 
 test.beforeEach(async ({ page }) => {
+  await blockBackgroundMusic(page);
   await ready(page);
 });
 
-test("source content, local assets, empty projects, and original links are retained", async ({
+test("source content, local assets, empty projects, and configured links are retained", async ({
   page,
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await expect(
-    page.getByRole("heading", { name: "Pham Thanh An." }),
+    page.getByRole("heading", { name: "Pham Thanh An", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".cover-bio")).toContainText(
     "Hi, I'm An, a passionate Software Engineer",
   );
   const links = await page
-    .locator("#page-0 .social-links a")
+    .locator("#page-1 .social-links a")
     .evaluateAll((nodes) => nodes.map((node) => node.getAttribute("href")));
   expect(links).toEqual([
     "https://www.facebook.com/pham.thanh.an.2550",
-    "https://t.me",
+    "https://t.me/anpham2kx",
     "https://zalo.me/0375480845",
-    "https://github.com/AnPham1820",
+    "https://github.com/anpham2kx",
   ]);
   await expect(page.locator("#page-4")).toContainText("85/150");
   await expect(page.locator("#page-5")).toContainText(
@@ -78,7 +77,8 @@ test("source content, local assets, empty projects, and original links are retai
 test("buttons reach both boundaries in order; rapid inputs do not double-turn", async ({
   page,
 }) => {
-  const step = await mode(page);
+  const step = 2;
+  await expect(page.locator(".book")).toHaveAttribute("data-mode", "2");
   await expect(
     page.getByRole("button", { name: "Trang trước", exact: true }),
   ).toBeDisabled();
@@ -117,10 +117,9 @@ test("buttons reach both boundaries in order; rapid inputs do not double-turn", 
 test("keyboard works, ignores typing, and form drafts survive page changes", async ({
   page,
 }) => {
-  const step = await mode(page);
   await page.keyboard.press("ArrowRight");
   await idle(page);
-  await expect(page.locator(`#page-${step}`)).toBeVisible();
+  await expect(page.locator("#page-2")).toBeVisible();
   await page
     .getByRole("button", { name: "Phạm Thanh An — về trang đầu" })
     .click();
@@ -128,7 +127,7 @@ test("keyboard works, ignores typing, and form drafts survive page changes", asy
   await goContact(page);
   await page.getByLabel("Họ tên", { exact: false }).fill("Test User");
   await page.keyboard.press("ArrowLeft");
-  await expect(page.locator("#page-7")).toBeVisible();
+  await expect(page.locator("#page-6")).toBeVisible();
   await page.getByRole("button", { name: "Trang trước", exact: true }).click();
   await idle(page);
   await page.getByRole("button", { name: "Trang sau", exact: true }).click();
@@ -167,7 +166,6 @@ test("drag follows the pointer, short drag cancels, outside release commits", as
       });
     }
   });
-  const step = await mode(page);
   await drag(page, 18, 150);
   await expect(page.locator(".book")).toHaveAttribute("data-phase", "dragging");
   const transform = await page
@@ -177,7 +175,7 @@ test("drag follows the pointer, short drag cancels, outside release commits", as
   expect(transform).not.toBe("rotateY(0deg)");
   await page.mouse.up();
   await idle(page);
-  await expect(page.locator("#page-0")).toBeVisible();
+  await expect(page.locator("#page-1")).toBeVisible();
   const { y } = await drag(page, 80);
   await page.mouse.move(1, y, { steps: 15 });
   await page.mouse.up();
@@ -192,22 +190,41 @@ test("drag follows the pointer, short drag cancels, outside release commits", as
     ),
     contentType: "application/json",
   });
-  await expect(page.locator(`#page-${step}`)).toBeVisible();
+  await expect(page.locator("#page-2")).toBeVisible();
 });
 
 test("pointer cancel, lost capture and resize never leave a locked turn", async ({
   page,
 }) => {
+  await page.locator(".book").evaluate((node) => {
+    node.addEventListener("pointerdown", (event) => {
+      node.setAttribute(
+        "data-test-pointer",
+        String((event as PointerEvent).pointerId),
+      );
+    });
+  });
   for (const event of ["pointercancel", "lostpointercapture"]) {
-    await drag(page, 80);
-    if (event === "lostpointercapture")
-      await page.locator(".book").evaluate((node) => {
-        if (node.hasPointerCapture(1)) node.releasePointerCapture(1);
-      });
-    else await page.locator(".book").dispatchEvent(event, { pointerId: 1 });
+    const { x, y } = await drag(page, 80);
+    const pointerId = Number(
+      await page.locator(".book").getAttribute("data-test-pointer"),
+    );
+    expect(
+      await page
+        .locator(".book")
+        .evaluate((node, id) => node.hasPointerCapture(id), pointerId),
+    ).toBe(true);
+    if (event === "lostpointercapture") {
+      await page
+        .locator(".book")
+        .evaluate((node, id) => node.releasePointerCapture(id), pointerId);
+      // Native capture changes are processed before the next pointer event.
+      await page.mouse.move(x - 81, y);
+    } else await page.locator(".book").dispatchEvent(event, { pointerId });
+    await idle(page);
     await page.mouse.up();
     await idle(page);
-    await expect(page.locator("#page-0")).toBeVisible();
+    await expect(page.locator("#page-1")).toBeVisible();
   }
   await drag(page, 80);
   const current = page.viewportSize();
@@ -220,13 +237,13 @@ test("pointer cancel, lost capture and resize never leave a locked turn", async 
   await idle(page);
   await page.mouse.up();
   await idle(page);
-  await expect(page.locator("#page-0")).toBeVisible();
+  await expect(page.locator("#page-1")).toBeVisible();
   await page.getByRole("button", { name: "Trang sau", exact: true }).click();
   await idle(page);
-  await expect(page.locator(`#page-${await mode(page)}`)).toBeVisible();
+  await expect(page.locator("#page-2")).toBeVisible();
 });
 
-test("one/two-page resize preserves the exact reading leaf and scroll offset", async ({
+test("desktop/phone resize keeps two pages, contact draft and scroll offset", async ({
   page,
 }) => {
   await goContact(page);
@@ -237,12 +254,16 @@ test("one/two-page resize preserves the exact reading leaf and scroll offset", a
   await expect(page.locator(".book")).toHaveAttribute("data-mode", "2");
   await page.getByLabel("Nội dung *", { exact: true }).focus();
   await page.setViewportSize({ width: 390, height: 650 });
-  await expect(page.locator(".book")).toHaveAttribute("data-mode", "1");
-  await expect(page.locator("#page-7")).toBeVisible();
+  await expect(page.locator(".book")).toHaveAttribute("data-mode", "2");
+  await expect(page.locator("#page-6")).toBeVisible();
   await expect(page.getByLabel("Nội dung *", { exact: true })).toHaveValue(
     "Draft survives a responsive layout change.",
   );
-  const content = page.locator("#page-7 .page-content");
+  const content = page.locator("#page-6 .page-content");
+  // Create genuinely long form content independent of the current compact spacing.
+  await page.locator("#message").evaluate((node) => {
+    node.style.height = "350px";
+  });
   await content.evaluate((node) => {
     node.scrollTop = node.scrollHeight;
   });
@@ -318,12 +339,11 @@ test("form validates, preserves failure, locks concurrent sends, clears only on 
   expect(requests).toBe(2);
 });
 
-test("simple mode, reduced motion and theme preferences remain usable", async ({
+test("reduced motion and theme preferences work without a display-mode switch", async ({
   page,
 }) => {
+  await expect(page.locator(".view-toggle")).toHaveCount(0);
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.getByRole("button", { name: "Trải nghiệm sách 3D" }).click();
-  await expect(page.locator(".book")).toHaveAttribute("data-simple", "true");
   await page.getByRole("button", { name: "Chuyển sang chế độ tối" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await goContact(page);
@@ -331,7 +351,6 @@ test("simple mode, reduced motion and theme preferences remain usable", async ({
   await page.reload();
   await idle(page);
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await expect(page.locator(".book")).toHaveAttribute("data-simple", "true");
 });
 
 test("text selection is native; links are not captured by the drag gesture", async ({
@@ -344,13 +363,13 @@ test("text selection is native; links are not captured by the drag gesture", asy
     window.getSelection()?.addRange(range);
   });
   await page.keyboard.press("ArrowRight");
-  await expect(page.locator("#page-0")).toBeVisible();
+  await expect(page.locator("#page-1")).toBeVisible();
   expect(
     await page.evaluate(() => window.getSelection()?.toString()),
   ).toContain("Hi, I'm An");
   await page.evaluate(() => window.getSelection()?.removeAllRanges());
   await page
-    .locator("#page-0 .social-links a")
+    .locator("#page-1 .social-links a")
     .first()
     .dispatchEvent("pointerdown", {
       pointerId: 10,
@@ -366,7 +385,7 @@ test("text selection is native; links are not captured by the drag gesture", asy
 test("all content stays within the book, long form scrolls, and no horizontal overflow", async ({
   page,
 }) => {
-  for (let index = 0; index < 8; index += await mode(page)) {
+  for (let index = 0; index < 8; index += 2) {
     const dimensions = await page
       .locator(".book-page:not([hidden]) .page-content")
       .evaluateAll((nodes) =>
@@ -383,7 +402,7 @@ test("all content stays within the book, long form scrolls, and no horizontal ov
       expect(item.overflow).toBe("auto");
       expect(item.height).toBeGreaterThan(300);
     }
-    if (index + (await mode(page)) < 8) {
+    if (index + 2 < 8) {
       await page
         .getByRole("button", { name: "Trang sau", exact: true })
         .click();
@@ -464,12 +483,12 @@ test("real Chromium touch: vertical pans scroll; horizontal swipe turns", async 
     "CDP touch injection is Chromium-specific; other engines cover pointer and layout tests.",
   );
   await page.setViewportSize({ width: 390, height: 650 });
-  await expect(page.locator(".book")).toHaveAttribute("data-mode", "1");
+  await expect(page.locator(".book")).toHaveAttribute("data-mode", "2");
   const client = await context.newCDPSession(page);
-  const box = await page.locator("#page-0 .page-content").boundingBox();
+  const box = await page.locator("#page-1 .page-content").boundingBox();
   if (!box) throw new Error("Missing content");
   const x = box.x + box.width / 2;
-  const y = box.y + box.height - 80;
+  const y = box.y + 180;
   await client.send("Input.dispatchTouchEvent", {
     type: "touchStart",
     touchPoints: [{ x, y }],
@@ -483,10 +502,10 @@ test("real Chromium touch: vertical pans scroll; horizontal swipe turns", async 
     type: "touchEnd",
     touchPoints: [],
   });
-  await expect(page.locator("#page-0")).toBeVisible();
+  await expect(page.locator("#page-1")).toBeVisible();
   await expect
     .poll(() =>
-      page.locator("#page-0 .page-content").evaluate((node) => node.scrollTop),
+      page.locator("#page-1 .page-content").evaluate((node) => node.scrollTop),
     )
     .toBeGreaterThan(0);
   const startX = box.x + box.width - 30;
@@ -505,6 +524,6 @@ test("real Chromium touch: vertical pans scroll; horizontal swipe turns", async 
     touchPoints: [],
   });
   await idle(page);
-  await expect(page.locator("#page-1")).toBeVisible();
+  await expect(page.locator("#page-2")).toBeVisible();
   await client.detach();
 });

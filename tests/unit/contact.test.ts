@@ -21,6 +21,14 @@ function configure() {
   vi.stubEnv("NEXT_PUBLIC_EMAILJS_PUBLIC_KEY", "QCLgOuRqCwyGGQ2hW");
 }
 describe("contact validation and EmailJS contract", () => {
+  it.each([1, 5000])(
+    "accepts a message with exactly %s characters",
+    (length) => {
+      expect(
+        validateContact({ ...valid, message: "a".repeat(length) }),
+      ).toEqual({});
+    },
+  );
   it("requires all fields and rejects whitespace", () =>
     expect(
       Object.keys(

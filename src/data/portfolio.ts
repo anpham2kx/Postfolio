@@ -15,7 +15,12 @@ export const socialLinks = [
     href: "https://www.facebook.com/pham.thanh.an.2550",
     icon: "facebook",
   },
-  { name: "Telegram", label: "Telegram", href: "https://t.me", icon: "send" },
+  {
+    name: "Telegram",
+    label: "Telegram",
+    href: "https://t.me/anpham2kx",
+    icon: "send",
+  },
   {
     name: "Điện thoại",
     label: "Điện thoại · Zalo",
@@ -25,7 +30,7 @@ export const socialLinks = [
   {
     name: "GitHub",
     label: "GitHub",
-    href: "https://github.com/AnPham1820",
+    href: "https://github.com/anpham2kx",
     icon: "github",
   },
 ] as const;
@@ -97,32 +102,29 @@ export const chapters = [
   {
     id: "gioi-thieu",
     title: "Giới thiệu",
-    subtitle: "Một chút về An",
-    page: 0,
+    page: 1,
   },
   {
     id: "so-thich",
     title: "Sở thích",
-    subtitle: "Ngoài những dòng code",
     page: 2,
   },
-  { id: "ky-nang", title: "Kỹ năng", subtitle: "Công nghệ & công cụ", page: 3 },
-  { id: "hoc-van", title: "Học vấn", subtitle: "Hành trình học tập", page: 4 },
-  { id: "du-an", title: "Dự án", subtitle: "Không gian dự án", page: 5 },
+  { id: "ky-nang", title: "Kỹ năng", page: 3 },
+  { id: "hoc-van", title: "Học vấn", page: 4 },
+  { id: "du-an", title: "Dự án", page: 5 },
   {
     id: "lien-he",
     title: "Liên hệ",
-    subtitle: "Bắt đầu một cuộc trò chuyện",
-    page: 7,
+    page: 6,
   },
 ] as const;
 export const pageTitles = [
+  "Bìa trước",
   "Giới thiệu",
-  "Mục lục",
   "Sở thích",
   "Kỹ năng",
   "Học vấn",
   "Dự án",
-  "Kết nối",
   "Liên hệ",
+  "Bìa sau",
 ] as const;

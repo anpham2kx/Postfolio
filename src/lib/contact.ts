@@ -19,8 +19,8 @@ export function validateContact(values: ContactValues): ContactErrors {
     errors.from_name = "Họ tên cần từ 2 đến 100 ký tự.";
   if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
     errors.from_email = "Vui lòng nhập địa chỉ email hợp lệ.";
-  if (message.length < 10 || message.length > 5000)
-    errors.message = "Nội dung cần từ 10 đến 5.000 ký tự.";
+  if (message.length < 1 || message.length > 5000)
+    errors.message = "Nội dung cần từ 1 đến 5.000 ký tự.";
   return errors;
 }
 
@@ -37,7 +37,7 @@ export async function sendContact(values: ContactValues): Promise<void> {
   const config = emailConfig();
   if (!config)
     throw new Error(
-      "Form chưa được cấu hình. Bạn có thể liên hệ qua các liên kết ở trang Kết nối.",
+      "Form chưa được cấu hình. Bạn có thể liên hệ qua các liên kết ở trang Giới thiệu.",
     );
   if (Object.keys(validateContact(values)).length)
     throw new Error("Vui lòng kiểm tra lại thông tin đã nhập.");
@@ -66,7 +66,7 @@ export async function sendContact(values: ContactValues): Promise<void> {
       throw new Error(
         response.status === 429
           ? "Bạn gửi hơi nhanh. Vui lòng đợi một lát rồi thử lại."
-          : "Chưa gửi được tin nhắn. Vui lòng thử lại hoặc liên hệ qua các liên kết ở trang Kết nối.",
+          : "Chưa gửi được tin nhắn. Vui lòng thử lại hoặc liên hệ qua các liên kết ở trang Giới thiệu.",
       );
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError")

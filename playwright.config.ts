@@ -10,15 +10,22 @@ export default defineConfig({
   retries: 0,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
-    baseURL: "http://127.0.0.1:3000",
-    trace: "retain-on-failure",
+    baseURL: "http://127.0.0.1:3100",
+    // Keep DOM/actions for debugging without continuously encoding the animated
+    // photo background in three concurrent browser screencasts.
+    trace: {
+      mode: "retain-on-failure",
+      screenshots: false,
+      snapshots: true,
+      sources: true,
+    },
     screenshot: "only-on-failure",
     colorScheme: "light",
   },
   webServer: {
-    command: "npm run start -- --hostname 127.0.0.1",
-    url: "http://127.0.0.1:3000",
-    reuseExistingServer: !process.env.CI,
+    command: "npm run start -- --hostname 127.0.0.1 --port 3100",
+    url: "http://127.0.0.1:3100",
+    reuseExistingServer: false,
     timeout: 60000,
   },
   projects: [
