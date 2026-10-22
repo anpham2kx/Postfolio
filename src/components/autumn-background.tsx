@@ -1,13 +1,16 @@
 import type { CSSProperties } from "react";
+import { HalloweenVisitors } from "./halloween-visitors";
 
 const colors = ["#dc812d", "#ad451c", "#dba745", "#b66126"];
 
 /** Static decoration: CSS animates a fixed number of leaves without React frames. */
 export function AutumnBackground() {
   return (
-    <div className="autumn-scene" aria-hidden="true">
-      <div className="cottage-background" />
-      <div className="falling-leaves">
+    <>
+      <div className="autumn-scene" aria-hidden="true">
+        <div className="cottage-background" />
+      </div>
+      <div className="falling-leaves" aria-hidden="true">
         {Array.from({ length: 20 }, (_, index) => {
           const style = {
             "--leaf-x": `${(index * 37 + 4) % 104}%`,
@@ -48,6 +51,7 @@ export function AutumnBackground() {
           );
         })}
       </div>
-    </div>
+      <HalloweenVisitors />
+    </>
   );
 }

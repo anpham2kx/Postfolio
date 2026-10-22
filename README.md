@@ -68,11 +68,13 @@ Kiểm thử tự động giả lập response của EmailJS và kiểm tra payl
 
 - Ảnh nền: `public/images/Background_Halloween_Cozy_Cottage.jpg`, bản sao nguyên vẹn của file được cung cấp (1280×720, khoảng 179 KB).
 - Nhạc: `public/audio/autumn-halloween.mp3`, bản sao nguyên vẹn của MP3 được cung cấp, đổi sang tên URL ngắn. File khoảng **84 MB**; giữ `preload="none"` và để trình duyệt tải khi phát, hỗ trợ HTTP Range. Khi đưa lên hosting, cần phục vụ cả thư mục `public/audio`; có thể thay file cùng đường dẫn để đổi nhạc.
-- Đĩa vinyl ở góc trái dưới có nhãn bí ngô và dơi vẽ bằng SVG/CSS, không tải thêm hình từ bên ngoài. Bấm hoặc nhấn Enter/Space để phát/tạm dừng. Đĩa chỉ xoay khi audio đang phát; dừng giữ nguyên góc quay. Nhạc lặp, âm lượng khởi tạo 35%, phát tiếp từ thời điểm đã dừng.
+- Đĩa vinyl ở góc trái dưới có nhãn bí ngô và dơi vẽ bằng SVG/CSS, không tải thêm hình từ bên ngoài. Bấm hoặc nhấn Enter/Space để phát/tạm dừng. Đĩa chỉ xoay khi audio đang phát; dừng giữ nguyên góc quay. Nhạc lặp, âm lượng khởi tạo 100%, phát tiếp từ thời điểm đã dừng.
 - Trang thử tự phát một lần. Nếu trình duyệt chặn autoplay có âm thanh, đĩa giữ trạng thái dừng và người đọc bấm đĩa để bắt đầu. Lựa chọn tạm dừng được nhớ trong `sessionStorage` của tab; không tự bật lại sau reload khi đã chọn dừng. Nhạc vẫn hoạt động nếu storage bị chặn. Lỗi tải có thông báo và cho phép bấm thử lại.
-- Lá vàng/cam rơi chậm, đung đưa và xoay bằng CSS: tối đa 20 lá, 12 ở màn hình ≤760 px và 8 ở ≤480 px. Lớp lá nằm phía sau sách, không bắt pointer và không gây render React theo từng frame. Tab ẩn tạm dừng chuyển động lá. `prefers-reduced-motion` ẩn lá và bỏ quay đĩa; nhạc vẫn bật/tắt bình thường.
+- Lá vàng/cam rơi chậm, đung đưa và xoay bằng CSS: tối đa 20 lá, 12 ở màn hình ≤760 px và 8 ở ≤480 px. Lớp lá nằm phía trước và rơi qua cả sách, không bắt pointer và không gây render React theo từng frame. Tab ẩn tạm dừng chuyển động lá. `prefers-reduced-motion` ẩn lá và bỏ quay đĩa; nhạc vẫn bật/tắt bình thường.
 
 Không xem được [video tham khảo YouTube](https://www.youtube.com/live/vuPhCSunt5U) trong môi trường làm việc (trang xem trả HTTP 429). Hiệu ứng lá được dựng theo mô tả và tông màu ảnh cung cấp, chưa đối chiếu trực tiếp chuyển động trong video.
+
+Hồn ma và dơi nằm trong `src/components/halloween-visitors.tsx`: 3 hồn ma bay lượn, mờ dần/xuất hiện lại và 5 con dơi vỗ cánh bay ngang theo từng đợt hai chiều. Màn hình nhỏ giảm còn 2 hồn ma và 3 con dơi. Các lớp trang trí nằm trước sách, không bắt pointer, tạm dừng khi tab ẩn và tắt khi reduced motion hoặc in trang. Animation dùng CSS, không có timer hay cập nhật React theo frame.
 
 ## Cấu trúc file
 
