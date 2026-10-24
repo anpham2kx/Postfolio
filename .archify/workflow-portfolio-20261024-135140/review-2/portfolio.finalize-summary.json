@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "workflow",
+  "quality": "showcase",
+  "specification": {
+    "path": "C:\\VibeCode\\profolio\\.archify\\workflow-portfolio-20261024-135140\\candidate.json",
+    "sha256": "0907984db9c14dc17ae319b2ec612d8603c50ea6386328d91708bdd94a7fdde7",
+    "bytes": 18498
+  },
+  "artifact": {
+    "path": "C:\\VibeCode\\profolio\\.archify\\workflow-portfolio-20261024-135140\\portfolio.html",
+    "sha256": "1372078d4ae9b7db61b718567d2e10879132d8bb8924dd7447d147a5ca93de17",
+    "bytes": 882835
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [
+    {
+      "code": "i18n/locale-fallback",
+      "severity": "warning",
+      "message": "meta.locale \"vi\" has no bundled catalog and no usable meta.translations; the Viewer chrome and <html lang> fall back to English.",
+      "subject": {
+        "diagramType": "workflow",
+        "path": "/meta/locale"
+      },
+      "evidence": {
+        "locale": "vi",
+        "bundledLocales": [
+          "en",
+          "zh-CN",
+          "zh-TW",
+          "es",
+          "ko",
+          "ar"
+        ]
+      },
+      "supportedFixes": [
+        "Supply meta.translations for this locale.",
+        "Use a bundled locale: en, zh-CN, zh-TW, es, ko, ar."
+      ]
+    }
+  ],
+  "diagnosticSummary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "C:\\VibeCode\\profolio\\.archify\\workflow-portfolio-20261024-135140\\review-2\\portfolio.finalize.json",
+    "summaryReceipt": "C:\\VibeCode\\profolio\\.archify\\workflow-portfolio-20261024-135140\\review-2\\portfolio.finalize-summary.json",
+    "browserCheckReceipt": "C:\\VibeCode\\profolio\\.archify\\workflow-portfolio-20261024-135140\\review-2\\portfolio.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-24T06:53:13.306Z",
+    "source": "network",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 4958,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  }
+}

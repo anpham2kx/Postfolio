@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "fail",
+  "type": "workflow",
+  "quality": "showcase",
+  "specification": {
+    "path": "C:\\VibeCode\\profolio\\.archify\\workflow-portfolio-20261024-135140\\candidate.json",
+    "sha256": "04dd28421464b83584ff39b5543b9440fe59e36ee0aa723f19712fa531b177d9",
+    "bytes": 17666
+  },
+  "artifact": {
+    "path": "C:\\VibeCode\\profolio\\.archify\\workflow-portfolio-20261024-135140\\portfolio.html",
+    "sha256": "b22bc7ba65cbebf00a1517d1d5ab6280f6faa1156ad92cf1decaa6b3eabd4527",
+    "bytes": 879506
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "fail"
+  },
+  "failedStage": "browser-check",
+  "diagnostics": [
+    {
+      "code": "viewer/browser-check-runtime",
+      "severity": "error",
+      "message": "browser-check could not complete its Chrome inspection.",
+      "subject": {
+        "artifact": "C:\\VibeCode\\profolio\\.archify\\workflow-portfolio-20261024-135140\\portfolio.html"
+      },
+      "evidence": {
+        "reason": "Temporary directory ancestor identity is unavailable: C:\\Users\\MSI\\AppData\\Local\\Temp"
+      },
+      "supportedFixes": [
+        "resolve the reported Chrome inspection error, then rerun browser-check"
+      ]
+    }
+  ],
+  "diagnosticSummary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "C:\\VibeCode\\profolio\\.archify\\workflow-portfolio-20261024-135140\\portfolio.finalize.json",
+    "summaryReceipt": "C:\\VibeCode\\profolio\\.archify\\workflow-portfolio-20261024-135140\\portfolio.finalize-summary.json",
+    "browserCheckReceipt": "C:\\VibeCode\\profolio\\.archify\\workflow-portfolio-20261024-135140\\portfolio.browser-check.json"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 1647,
+  "browserCheck": {
+    "requested": true,
+    "ran": false
+  }
+}

@@ -1,0 +1,850 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Portfolio — luồng nghiệp vụ và rẽ nhánh",
+    "locale": "vi",
+    "quality_profile": "showcase",
+    "output": ".archify/workflow-portfolio-20261024-135140/portfolio.html",
+    "repository": {
+      "url": "https://github.com/anpham2kx/Postfolio",
+      "revision": "2c6b66a2cfa76399090fa18af9661070b7ff317c"
+    },
+    "views": [
+      {
+        "id": "reading",
+        "label": "Đọc và lật sách",
+        "focus": [
+          "visit",
+          "read",
+          "choose",
+          "nav",
+          "guard",
+          "turn",
+          "done",
+          "gesture",
+          "axis",
+          "follow",
+          "commit"
+        ]
+      },
+      {
+        "id": "audio",
+        "label": "Nhạc nền",
+        "focus": [
+          "auto",
+          "play",
+          "pause",
+          "retry",
+          "blocked",
+          "unlock",
+          "audioerror"
+        ]
+      },
+      {
+        "id": "message",
+        "label": "Gửi liên hệ",
+        "focus": [
+          "contact",
+          "input",
+          "valid",
+          "config",
+          "send",
+          "success",
+          "invalid",
+          "failed"
+        ]
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "01 · Hành trình chính"
+    },
+    {
+      "id": "fallback",
+      "label": "Nhánh truy cập"
+    },
+    {
+      "id": "book",
+      "label": "02 · Lật bằng nút / phím"
+    },
+    {
+      "id": "bookalt",
+      "label": "Giới hạn và gián đoạn"
+    },
+    {
+      "id": "drag",
+      "label": "03 · Kéo chuột / vuốt"
+    },
+    {
+      "id": "dragalt",
+      "label": "Nhánh thao tác"
+    },
+    {
+      "id": "music",
+      "label": "04 · Nhạc chạy song song"
+    },
+    {
+      "id": "musicalt",
+      "label": "Chặn tự phát và lỗi"
+    },
+    {
+      "id": "form",
+      "label": "05 · Gửi liên hệ"
+    },
+    {
+      "id": "formalt",
+      "label": "Nhánh kiểm tra / lỗi"
+    }
+  ],
+  "mainPath": [
+    "visit",
+    "read",
+    "choose",
+    "contact"
+  ],
+  "nodes": [
+    {
+      "id": "visit",
+      "lane": "main",
+      "col": 0,
+      "type": "frontend",
+      "label": "Mở website",
+      "sublabel": "Khởi tạo trải nghiệm",
+      "sources": [
+        {
+          "path": "src/app/page.tsx",
+          "line": 6,
+          "end_line": 14
+        }
+      ]
+    },
+    {
+      "id": "read",
+      "lane": "main",
+      "col": 1,
+      "type": "frontend",
+      "label": "Đọc portfolio",
+      "sublabel": "Hai trang mỗi lần",
+      "sources": [
+        {
+          "path": "src/hooks/use-book.ts",
+          "line": 83,
+          "end_line": 103
+        }
+      ]
+    },
+    {
+      "id": "choose",
+      "lane": "main",
+      "col": 2,
+      "type": "frontend",
+      "label": "Chọn nội dung",
+      "sublabel": "Mục lục / liên hệ",
+      "sources": [
+        {
+          "path": "src/components/book-pages.tsx",
+          "line": 128,
+          "end_line": 142
+        }
+      ]
+    },
+    {
+      "id": "contact",
+      "lane": "main",
+      "col": 3,
+      "type": "frontend",
+      "label": "Mở trang liên hệ",
+      "sublabel": "Bên trái bìa cuối",
+      "sources": [
+        {
+          "path": "src/components/book-pages.tsx",
+          "line": 260,
+          "end_line": 268
+        }
+      ]
+    },
+    {
+      "id": "nojs",
+      "lane": "fallback",
+      "col": 0,
+      "type": "frontend",
+      "label": "Đọc theo chiều dọc",
+      "sublabel": "JavaScript bị tắt",
+      "sources": [
+        {
+          "path": "src/app/layout.tsx",
+          "line": 40,
+          "end_line": 45
+        }
+      ]
+    },
+    {
+      "id": "external",
+      "lane": "fallback",
+      "col": 2,
+      "type": "external",
+      "label": "Mở tab ngoài",
+      "sublabel": "Liên kết mạng xã hội",
+      "sources": [
+        {
+          "path": "src/components/book-pages.tsx",
+          "line": 87,
+          "end_line": 101
+        }
+      ]
+    },
+    {
+      "id": "nav",
+      "lane": "book",
+      "col": 0,
+      "type": "frontend",
+      "label": "Yêu cầu lật",
+      "sublabel": "Nút / phím / mục lục",
+      "sources": [
+        {
+          "path": "src/hooks/use-book.ts",
+          "line": 219,
+          "end_line": 238
+        }
+      ]
+    },
+    {
+      "id": "guard",
+      "lane": "book",
+      "col": 1,
+      "type": "security",
+      "label": "Có thể lật?",
+      "sublabel": "Rảnh và còn trang",
+      "sources": [
+        {
+          "path": "src/lib/book-machine.ts",
+          "line": 67,
+          "end_line": 84
+        }
+      ]
+    },
+    {
+      "id": "turn",
+      "lane": "book",
+      "col": 2,
+      "type": "frontend",
+      "label": "Lật từng tờ",
+      "sublabel": "Nhảy xa: qua từng trang",
+      "sources": [
+        {
+          "path": "src/hooks/use-book.ts",
+          "line": 179,
+          "end_line": 217
+        }
+      ]
+    },
+    {
+      "id": "done",
+      "lane": "book",
+      "col": 3,
+      "type": "frontend",
+      "label": "Đọc trang mới",
+      "sublabel": "Giữ vị trí cuộn",
+      "sources": [
+        {
+          "path": "src/hooks/use-book.ts",
+          "line": 75,
+          "end_line": 103
+        }
+      ]
+    },
+    {
+      "id": "ignore",
+      "lane": "bookalt",
+      "col": 1,
+      "type": "frontend",
+      "label": "Giữ nguyên trang",
+      "sublabel": "Bận / đầu hoặc cuối",
+      "sources": [
+        {
+          "path": "src/lib/book-machine.ts",
+          "line": 67,
+          "end_line": 92
+        }
+      ]
+    },
+    {
+      "id": "cancel",
+      "lane": "bookalt",
+      "col": 2,
+      "type": "frontend",
+      "label": "Hủy lượt hiện tại",
+      "sublabel": "Escape / resize / mất focus",
+      "sources": [
+        {
+          "path": "src/hooks/use-book.ts",
+          "line": 111,
+          "end_line": 119
+        },
+        {
+          "path": "src/hooks/use-book.ts",
+          "line": 388,
+          "end_line": 398
+        },
+        {
+          "path": "src/hooks/use-book.ts",
+          "line": 450,
+          "end_line": 492
+        }
+      ]
+    },
+    {
+      "id": "gesture",
+      "lane": "drag",
+      "col": 0,
+      "type": "frontend",
+      "label": "Kéo hoặc vuốt",
+      "sublabel": "Ngoài nút và ô nhập",
+      "sources": [
+        {
+          "path": "src/hooks/use-book.ts",
+          "line": 241,
+          "end_line": 298
+        }
+      ]
+    },
+    {
+      "id": "axis",
+      "lane": "drag",
+      "col": 1,
+      "type": "security",
+      "label": "Xét hướng kéo",
+      "sublabel": "Ngưỡng 10 px; tỷ lệ 1,25",
+      "sources": [
+        {
+          "path": "src/lib/book-machine.ts",
+          "line": 39,
+          "end_line": 45
+        }
+      ]
+    },
+    {
+      "id": "follow",
+      "lane": "drag",
+      "col": 2,
+      "type": "frontend",
+      "label": "Trang theo tay",
+      "sublabel": "Thả ngoài sách vẫn nhận",
+      "sources": [
+        {
+          "path": "src/hooks/use-book.ts",
+          "line": 319,
+          "end_line": 376
+        }
+      ]
+    },
+    {
+      "id": "commit",
+      "lane": "drag",
+      "col": 3,
+      "type": "security",
+      "label": "Đủ ngưỡng lật?",
+      "sublabel": "Khoảng cách / vận tốc",
+      "sources": [
+        {
+          "path": "src/lib/book-machine.ts",
+          "line": 46,
+          "end_line": 54
+        }
+      ]
+    },
+    {
+      "id": "native",
+      "lane": "dragalt",
+      "col": 1,
+      "type": "frontend",
+      "label": "Thao tác gốc",
+      "sublabel": "Cuộn dọc / chọn chữ",
+      "sources": [
+        {
+          "path": "src/hooks/use-book.ts",
+          "line": 255,
+          "end_line": 305
+        }
+      ]
+    },
+    {
+      "id": "revert",
+      "lane": "dragalt",
+      "col": 3,
+      "type": "frontend",
+      "label": "Trả về trang cũ",
+      "sublabel": "Thiếu ngưỡng / kéo ngược",
+      "sources": [
+        {
+          "path": "src/hooks/use-book.ts",
+          "line": 195,
+          "end_line": 217
+        }
+      ]
+    },
+    {
+      "id": "auto",
+      "lane": "music",
+      "col": 0,
+      "type": "frontend",
+      "label": "Thử phát nhạc",
+      "sublabel": "Mỗi lần vào; âm lượng 100%",
+      "sources": [
+        {
+          "path": "src/components/background-music.tsx",
+          "line": 101,
+          "end_line": 133
+        }
+      ]
+    },
+    {
+      "id": "play",
+      "lane": "music",
+      "col": 1,
+      "type": "frontend",
+      "label": "Đang phát",
+      "sublabel": "Lặp bản nhạc nền",
+      "sources": [
+        {
+          "path": "src/components/background-music.tsx",
+          "line": 163,
+          "end_line": 181
+        }
+      ]
+    },
+    {
+      "id": "pause",
+      "lane": "music",
+      "col": 2,
+      "type": "frontend",
+      "label": "Dừng theo ý muốn",
+      "sublabel": "Bấm đĩa; hủy tải hoặc dừng",
+      "sources": [
+        {
+          "path": "src/components/background-music.tsx",
+          "line": 144,
+          "end_line": 152
+        }
+      ]
+    },
+    {
+      "id": "retry",
+      "lane": "music",
+      "col": 3,
+      "type": "frontend",
+      "label": "Thử phát lại",
+      "sublabel": "Bấm đĩa khi đã dừng",
+      "sources": [
+        {
+          "path": "src/components/background-music.tsx",
+          "line": 144,
+          "end_line": 152
+        }
+      ]
+    },
+    {
+      "id": "blocked",
+      "lane": "musicalt",
+      "col": 0,
+      "type": "frontend",
+      "label": "Chờ tương tác thật",
+      "sublabel": "Autoplay bị chặn",
+      "sources": [
+        {
+          "path": "src/components/background-music.tsx",
+          "line": 90,
+          "end_line": 98
+        }
+      ]
+    },
+    {
+      "id": "unlock",
+      "lane": "musicalt",
+      "col": 1,
+      "type": "frontend",
+      "label": "Thử sau tương tác",
+      "sublabel": "pointerup / phím hợp lệ",
+      "sources": [
+        {
+          "path": "src/components/background-music.tsx",
+          "line": 111,
+          "end_line": 131
+        }
+      ]
+    },
+    {
+      "id": "audioerror",
+      "lane": "musicalt",
+      "col": 3,
+      "type": "frontend",
+      "label": "Báo lỗi tải nhạc",
+      "sublabel": "Bấm đĩa để thử lại",
+      "sources": [
+        {
+          "path": "src/components/background-music.tsx",
+          "line": 183,
+          "end_line": 206
+        }
+      ]
+    },
+    {
+      "id": "input",
+      "lane": "form",
+      "col": 0,
+      "type": "frontend",
+      "label": "Nhập và gửi",
+      "sublabel": "Tên / email / nội dung",
+      "sources": [
+        {
+          "path": "src/components/contact-form.tsx",
+          "line": 23,
+          "end_line": 33
+        }
+      ]
+    },
+    {
+      "id": "valid",
+      "lane": "form",
+      "col": 1,
+      "type": "security",
+      "label": "Dữ liệu hợp lệ?",
+      "sublabel": "Tên 2–100; nội dung 1–5000",
+      "sources": [
+        {
+          "path": "src/lib/contact.ts",
+          "line": 13,
+          "end_line": 24
+        }
+      ]
+    },
+    {
+      "id": "config",
+      "lane": "form",
+      "col": 2,
+      "type": "security",
+      "label": "Đủ cấu hình?",
+      "sublabel": "Ba NEXT_PUBLIC_EMAILJS_*",
+      "sources": [
+        {
+          "path": "src/lib/contact.ts",
+          "line": 27,
+          "end_line": 43
+        }
+      ]
+    },
+    {
+      "id": "send",
+      "lane": "form",
+      "col": 3,
+      "type": "cloud",
+      "label": "Gửi qua EmailJS",
+      "sublabel": "Khóa gửi lặp; chờ tối đa 20s",
+      "sources": [
+        {
+          "path": "src/lib/contact.ts",
+          "line": 44,
+          "end_line": 64
+        },
+        {
+          "path": "src/components/contact-form.tsx",
+          "line": 23,
+          "end_line": 51
+        },
+        {
+          "path": "src/lib/contact.ts",
+          "line": 65,
+          "end_line": 80
+        }
+      ]
+    },
+    {
+      "id": "success",
+      "lane": "form",
+      "col": 4,
+      "type": "frontend",
+      "label": "Gửi thành công",
+      "sublabel": "Thông báo và xóa form",
+      "sources": [
+        {
+          "path": "src/components/contact-form.tsx",
+          "line": 34,
+          "end_line": 51
+        }
+      ]
+    },
+    {
+      "id": "invalid",
+      "lane": "formalt",
+      "col": 1,
+      "type": "frontend",
+      "label": "Sửa thông tin",
+      "sublabel": "Báo lỗi; focus ô đầu sai",
+      "sources": [
+        {
+          "path": "src/components/contact-form.tsx",
+          "line": 26,
+          "end_line": 32
+        }
+      ]
+    },
+    {
+      "id": "failed",
+      "lane": "formalt",
+      "col": 3,
+      "type": "frontend",
+      "label": "Giữ nội dung",
+      "sublabel": "Báo lỗi; mở khóa gửi",
+      "sources": [
+        {
+          "path": "src/components/contact-form.tsx",
+          "line": 42,
+          "end_line": 51
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "visit",
+      "to": "read",
+      "label": "Có JavaScript",
+      "role": "main"
+    },
+    {
+      "from": "read",
+      "to": "choose",
+      "role": "main"
+    },
+    {
+      "from": "choose",
+      "to": "contact",
+      "label": "Liên hệ",
+      "role": "main"
+    },
+    {
+      "from": "visit",
+      "to": "nojs",
+      "label": "Không có",
+      "role": "branch"
+    },
+    {
+      "from": "choose",
+      "to": "external",
+      "label": "Liên kết ngoài",
+      "role": "branch"
+    },
+    {
+      "from": "nav",
+      "to": "guard",
+      "role": "main"
+    },
+    {
+      "from": "guard",
+      "to": "turn",
+      "label": "Có",
+      "role": "main"
+    },
+    {
+      "from": "turn",
+      "to": "done",
+      "role": "main"
+    },
+    {
+      "from": "guard",
+      "to": "ignore",
+      "label": "Không",
+      "role": "branch"
+    },
+    {
+      "from": "turn",
+      "to": "cancel",
+      "label": "Bị ngắt",
+      "role": "error",
+      "variant": "security"
+    },
+    {
+      "from": "gesture",
+      "to": "axis",
+      "role": "main"
+    },
+    {
+      "from": "axis",
+      "to": "follow",
+      "label": "Ngang; còn trang",
+      "role": "main"
+    },
+    {
+      "from": "axis",
+      "to": "native",
+      "label": "Dọc",
+      "role": "branch"
+    },
+    {
+      "from": "follow",
+      "to": "commit",
+      "label": "Thả tay",
+      "role": "main"
+    },
+    {
+      "from": "commit",
+      "to": "done",
+      "label": "Đạt",
+      "role": "branch"
+    },
+    {
+      "from": "commit",
+      "to": "revert",
+      "label": "Không đạt",
+      "role": "branch"
+    },
+    {
+      "from": "auto",
+      "to": "play",
+      "label": "Được phép",
+      "role": "main"
+    },
+    {
+      "from": "play",
+      "to": "pause",
+      "label": "Bấm đĩa",
+      "role": "main"
+    },
+    {
+      "from": "pause",
+      "to": "retry",
+      "label": "Bấm lần nữa",
+      "role": "main"
+    },
+    {
+      "from": "auto",
+      "to": "blocked",
+      "label": "Bị chặn",
+      "role": "branch"
+    },
+    {
+      "from": "blocked",
+      "to": "unlock",
+      "label": "Tương tác thật",
+      "role": "main"
+    },
+    {
+      "from": "unlock",
+      "to": "play",
+      "label": "Phát được",
+      "role": "main"
+    },
+    {
+      "from": "retry",
+      "to": "audioerror",
+      "label": "Lỗi tải",
+      "role": "error",
+      "variant": "security"
+    },
+    {
+      "from": "audioerror",
+      "to": "retry",
+      "label": "Thử lại",
+      "role": "return"
+    },
+    {
+      "from": "input",
+      "to": "valid",
+      "role": "main"
+    },
+    {
+      "from": "valid",
+      "to": "config",
+      "label": "Đúng",
+      "role": "main"
+    },
+    {
+      "from": "valid",
+      "to": "invalid",
+      "label": "Sai",
+      "role": "branch"
+    },
+    {
+      "from": "invalid",
+      "to": "input",
+      "label": "Sửa rồi gửi",
+      "role": "return"
+    },
+    {
+      "from": "config",
+      "to": "send",
+      "label": "Đủ",
+      "role": "main"
+    },
+    {
+      "from": "config",
+      "to": "failed",
+      "label": "Thiếu",
+      "role": "error",
+      "variant": "security"
+    },
+    {
+      "from": "send",
+      "to": "success",
+      "label": "HTTP thành công",
+      "role": "main"
+    },
+    {
+      "from": "send",
+      "to": "failed",
+      "label": "Lỗi / quá 20s",
+      "role": "error",
+      "variant": "security"
+    },
+    {
+      "from": "retry",
+      "to": "play",
+      "label": "Phát được",
+      "role": "return"
+    },
+    {
+      "from": "auto",
+      "to": "audioerror",
+      "label": "Lỗi tải",
+      "role": "error",
+      "variant": "security"
+    },
+    {
+      "from": "failed",
+      "to": "input",
+      "label": "Thử lại thủ công",
+      "role": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Đọc sơ đồ",
+      "items": [
+        "Các hàng 02–05 khai triển thao tác từ hành trình chính; nhạc chạy độc lập với việc đọc sách.",
+        "Bấm từng bước để xem bằng chứng mã nguồn ở commit cố định. Nội dung sơ đồ bằng tiếng Việt; thanh công cụ Viewer dùng tiếng Anh."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Quy tắc lật sách",
+      "items": [
+        "Bỏ qua yêu cầu lật khi đang bận; không vượt trang đầu/cuối. Phím mũi tên không chiếm thao tác nhập liệu.",
+        "Kéo ngược nhanh hủy; hoàn tất khi tiến độ ≥32%, hoặc vận tốc >0,55 px/ms và quãng kéo ≥24 px.",
+        "Giảm chuyển động: kết thúc lật tức thời. Hủy chỉ bỏ lượt đang diễn ra, giữ các lượt đã hoàn tất."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Lỗi gửi và phát nhạc",
+      "items": [
+        "EmailJS: thiếu cấu hình, HTTP lỗi, 429, lỗi mạng hoặc hết 20 giây đều giữ bản nháp; không tự gửi lại.",
+        "Chỉ gửi ba biến from_name, from_email, message. Khi đang gửi, khóa lần gửi tiếp theo.",
+        "Autoplay bị chặn chỉ thử lại qua tương tác thật; không có auto-click sau 3 giây. Dừng chủ động không tự bật lại bởi tương tác khác."
+      ]
+    }
+  ]
+}

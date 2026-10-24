@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "465c813f-e89e-427b-947d-7e0e77e84ca3",
+  "status": "current",
+  "command": "deliver",
+  "type": "workflow",
+  "input": "C:\\VibeCode\\profolio\\.archify\\workflow-portfolio-20261024-135140\\candidate.json",
+  "output": "C:\\VibeCode\\profolio\\.archify\\workflow-portfolio-20261024-135140\\portfolio.html",
+  "specification": {
+    "sha256": "0907984db9c14dc17ae319b2ec612d8603c50ea6386328d91708bdd94a7fdde7",
+    "bytes": 18498
+  },
+  "artifact": {
+    "sha256": "1372078d4ae9b7db61b718567d2e10879132d8bb8924dd7447d147a5ca93de17",
+    "bytes": 882835
+  }
+}
