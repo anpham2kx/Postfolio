@@ -784,7 +784,7 @@ p {
   inset: 0;
   background:
     linear-gradient(var(--cottage-shade), var(--cottage-shade)),
-    url("/images/Background_Halloween_Cozy_Cottage.jpg") center / cover
+    var(--scene-image) center / cover
       no-repeat;
 }
 .falling-leaves,
@@ -1633,3 +1633,65 @@ p {
     display: none;
   }
 }
+
+/* Seasonal palette is independent of the light/dark preference. */
+:root[data-site-theme="christmas"] {
+  --chrome-text: #fff4db;
+  --chrome-line: #bba475;
+  --chrome-surface: #173c33ed;
+  --cottage-shade: #102b432b;
+}
+:root[data-site-theme="christmas"][data-theme="dark"] {
+  --chrome-surface: #102c26f2;
+  --cottage-shade: #061a356b;
+}
+[data-site-theme="christmas"] .book-cover,
+[data-site-theme="christmas"] .turn-face.book-cover {
+  color: #f3dfad;
+  background: radial-gradient(ellipse at 15% 0%, #37645155, transparent 65%), linear-gradient(120deg, #194b3d, #102f29);
+}
+[data-site-theme="christmas"] .cover-border {
+  border-color: #ba9d62;
+  box-shadow: inset 0 0 0 5px #173e33, inset 0 0 0 6px #887b51;
+}
+[data-site-theme="christmas"] .cover-role { color: #d3cda8; }
+.christmas-snow {
+  position: fixed; inset: 0; z-index: 20; pointer-events: none; overflow: hidden;
+}
+.snow-particle {
+  position: absolute; top: -40px; left: var(--x);
+  width: var(--size); height: var(--size); color: #fff;
+  animation: christmas-fall var(--duration) var(--delay) linear infinite;
+}
+.snow-dot { border-radius: 50%; background: #fff; opacity: .55; }
+.snow-crystal { opacity: .6; }
+.snow-crystal svg { width: 100%; height: 100%; }
+@keyframes christmas-fall {
+  from { transform: translate3d(0, -30px, 0) rotate(0); }
+  to { transform: translate3d(var(--drift), calc(100vh + 90px), 0) rotate(180deg); }
+}
+.christmas-lights {
+  position: fixed; inset: 0 0 auto; height: 48px; z-index: 30;
+  display: flex; justify-content: space-around; pointer-events: none;
+  border-top: 2px solid #233c2d;
+}
+.light-drop { position: relative; width: 1px; height: var(--drop); background: #23412f; }
+.light-drop i {
+  display: block; position: absolute; top: 100%; left: -4px;
+  width: 9px; height: 13px; border-radius: 40% 40% 50% 50%;
+  background: var(--bulb); box-shadow: 0 0 9px 2px var(--bulb);
+  animation: christmas-glow 3.8s var(--delay) ease-in-out infinite alternate;
+}
+@keyframes christmas-glow { from { opacity: .35; } to { opacity: 1; } }
+:root[data-ambient-paused="true"] .snow-particle,
+:root[data-ambient-paused="true"] .light-drop i { animation-play-state: paused; }
+@media (max-width: 760px) {
+  .snow-particle:nth-child(n + 21), .light-drop:nth-child(n + 17) { display: none; }
+  .light-drop { height: calc(var(--drop) * .65); }
+  .light-drop i { width: 6px; height: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .christmas-snow { display: none; }
+  .light-drop i { animation: none; opacity: .7; }
+}
+@media print { .christmas-snow, .christmas-lights { display: none; } }

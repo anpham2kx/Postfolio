@@ -13,3 +13,6 @@ test-results/
 # Root media duplicates (stored in public/)
 /Background_Halloween_Cozy_Cottage.jpg
 /*.mp3
+
+# Original Christmas artwork; optimized copy lives in public/themes/christmas/
+/Gemini_Generated_Image_tx14jutx14jutx14.png

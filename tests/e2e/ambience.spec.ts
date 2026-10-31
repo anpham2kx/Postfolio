@@ -3,7 +3,9 @@ import { expect, test, type Page } from "@playwright/test";
 // Avoid competing media clocks in multiple contexts of one headless browser.
 test.describe.configure({ mode: "default" });
 
-const musicPath = "/audio/autumn-halloween.mp3";
+const halloween = process.env.NEXT_PUBLIC_SITE_THEME === "halloween";
+const musicPath = halloween ? "/audio/autumn-halloween.mp3" : "/themes/christmas/music.mp3";
+const backgroundPath = halloween ? "/images/Background_Halloween_Cozy_Cottage.jpg" : "/themes/christmas/background.webp";
 const player = (page: Page) => page.locator(".music-player");
 const record = (page: Page) => page.locator(".record-button");
 const time = (page: Page) =>
@@ -30,7 +32,7 @@ async function openPaused(page: Page) {
   await expect(player(page)).toHaveAttribute("data-playback", "paused");
 }
 
-test("cottage image, Halloween record and decorative leaves fit without intercepting the book", async ({
+test("seasonal image, record and decorations fit without intercepting the book", async ({
   page,
   request,
 }) => {
@@ -40,19 +42,19 @@ test("cottage image, Halloween record and decorative leaves fit without intercep
   });
   await openPaused(page);
   const background = await request.get(
-    "/images/Background_Halloween_Cozy_Cottage.jpg",
+    backgroundPath,
   );
   expect(background.ok()).toBe(true);
-  expect(background.headers()["content-type"]).toContain("image/jpeg");
+  expect(background.headers()["content-type"]).toContain(halloween ? "image/jpeg" : "image/webp");
   await expect(page.locator(".cottage-background")).toHaveCSS(
     "background-image",
-    /Background_Halloween_Cozy_Cottage\.jpg/,
+    new RegExp(halloween ? "Background_Halloween_Cozy_Cottage" : "christmas/background"),
   );
   await expect(page.locator(".autumn-scene")).toHaveCSS(
     "pointer-events",
     "none",
   );
-  await expect(page.locator(".falling-leaf")).toHaveCount(20);
+  await expect(page.locator(halloween ? ".falling-leaf" : ".snow-particle")).toHaveCount(halloween ? 20 : 36);
   await expect(page.locator(".vinyl-label")).toBeVisible();
   await expect(page.locator(".record-badge, .music-tooltip")).toHaveCount(0);
   await expect(record(page)).not.toHaveAttribute("title");
@@ -296,7 +298,7 @@ test("reduced motion hides leaves and stops disc animation while music stays con
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await openPaused(page);
-  await expect(page.locator(".falling-leaves")).toBeHidden();
+  await expect(page.locator(halloween ? ".falling-leaves" : ".christmas-snow")).toBeHidden();
   await record(page).click();
   await expect(player(page)).toHaveAttribute("data-playback", "playing", {
     timeout: 15000,

@@ -7,9 +7,6 @@ const colors = ["#dc812d", "#ad451c", "#dba745", "#b66126"];
 export function AutumnBackground() {
   return (
     <>
-      <div className="autumn-scene" aria-hidden="true">
-        <div className="cottage-background" />
-      </div>
       <div className="falling-leaves" aria-hidden="true">
         {Array.from({ length: 20 }, (_, index) => {
           const style = {

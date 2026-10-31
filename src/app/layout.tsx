@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import "./globals.css";
+import { getSiteTheme } from "@/themes/registry";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -27,8 +28,14 @@ export const metadata: Metadata = {
 const themeScript = `(function(){try{var t=localStorage.getItem('an-book-theme');document.documentElement.dataset.theme=t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'}catch(e){document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}})()`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  const theme = getSiteTheme();
   return (
-    <html lang="vi" suppressHydrationWarning>
+    <html
+      lang="vi"
+      suppressHydrationWarning
+      data-site-theme={theme.id}
+      style={{ ...theme.colors, "--scene-image": `url("${theme.background}")` } as CSSProperties}
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

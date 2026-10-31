@@ -155,3 +155,19 @@ Nếu npm bỏ sót native optional dependency của Vitest trên Windows, chạ
 Phạm vi đã thực hiện và giới hạn còn lại được ghi tại [docs/TESTING.md](docs/TESTING.md). Mô phỏng viewport không thay thế thiết bị vật lý; không cam kết mọi trình duyệt hay thiết bị đều có trải nghiệm giống nhau.
 
 Bản cập nhật đạt TypeScript, lint, production build, **34 unit test và 105 E2E**; 3 bài CDP touch bỏ qua đúng phạm vi. Chi tiết tại [docs/TESTING.md](docs/TESTING.md). Có thể xem [ảnh desktop](docs/screenshots/chromium-desktop-light.png) và [ảnh điện thoại](docs/screenshots/chromium-phone-light.png).
+
+## Chủ đề theo mùa
+
+Chủ đề mặc định là **Giáng sinh**. Đặt `NEXT_PUBLIC_SITE_THEME=christmas` hoặc `halloween` trong `.env.local`, sau đó khởi động lại dev server; bản production cần build/deploy lại. Giá trị trống hoặc không hợp lệ dùng Giáng sinh. Chưa có nút đổi mùa trên giao diện; nút sáng/tối vẫn độc lập.
+
+- `src/themes/types.ts`: hợp đồng cấu hình (ảnh, nhạc, màu, hiệu ứng và đĩa nhạc).
+- `src/themes/christmas.ts`, `halloween.ts`: từng bộ chủ đề; `registry.ts` chọn bộ đang dùng trên server.
+- Layout áp dụng màu và ảnh nền; trang chủ chỉ render hiệu ứng và hình đĩa của mùa được chọn. BackgroundMusic dùng chung logic phát/dừng và nhận đường dẫn nhạc qua props. Nội dung, form và máy lật sách dùng chung.
+- `public/themes/christmas/`: ảnh WebP tối ưu từ PNG người dùng cung cấp và nhạc Giáng sinh. Halloween giữ nguyên tài nguyên cũ ở `public/images/` và `public/audio/` để không phá đường dẫn.
+- Thêm mùa: tạo cấu hình theo SiteTheme, component hiệu ứng/đĩa dạng Server Component, đăng ký vào registry. Dùng CSS variables cho màu, CSS animation cho trang trí.
+
+Tuyết/hoa tuyết và dây đèn không nhận pointer events; giảm số hạt trên màn hình nhỏ, dừng hiệu ứng khi tab ẩn, ẩn tuyết và ngừng nhấp nháy khi prefers-reduced-motion. Nhạc vẫn thử phát ở âm lượng 100%; nếu trình duyệt chặn autoplay, cần tương tác thật. Chỉ tài nguyên ảnh/nhạc của mùa được chọn được trình duyệt yêu cầu.
+
+Kiểm tra bản chủ đề: TypeScript, ESLint, 34 unit tests và production build đạt. 33 ca trình duyệt về giao diện mùa, nhạc và kéo sách đạt trên Chromium desktop/tablet/phone mô phỏng; Halloween cũng build và qua ca giao diện desktop. Đã xem ảnh chụp cả ba kích thước. Chưa kiểm tra mùa mới trên thiết bị vật lý hoặc Firefox/Safari. Playwright trên Windows cần dừng tiến trình runner ở bước dọn server sau khi các ca đã báo đạt.
+
+Tài nguyên Giáng sinh: background WebP khoảng 436 KB; MP3 64 kbps khoảng 87,9 MB, giữ nguyên thời lượng 10.981 giây của bản gốc. Bản nén có giảm chất lượng so với file gốc; file gốc ở thư mục gốc không bị sửa. Đã kiểm tra phát/dừng bản MP3 cuối.
