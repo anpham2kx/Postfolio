@@ -9,6 +9,9 @@ test("seasonal decoration preserves reading, light/dark and reduced motion", asy
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-site-theme", halloween ? "halloween" : "christmas");
   await expect(page.locator(".book")).toHaveAttribute("data-ready", "true");
+  await expect(page.locator(".book > .book-page:visible")).toHaveCount(1);
+  await page.getByRole("button", { name: "Trang sau", exact: true }).click();
+  await expect(page.locator(".book")).toHaveAttribute("data-cover", "open");
   await expect(page.locator(".book > .book-page:visible")).toHaveCount(2);
   await expect(page.locator(".cottage-background")).toHaveCount(1);
   if (!halloween) {
@@ -18,7 +21,7 @@ test("seasonal decoration preserves reading, light/dark and reduced motion", asy
     await expect(page.locator(".snow-crystal")).toHaveCount(9);
     expect(requested.some(url => /halloween|Halloween/.test(url))).toBe(false);
   }
-  await page.screenshot({ path: `docs/screenshots/${halloween ? "halloween" : "christmas"}-${info.project.name}.png`, fullPage: true });
+  await page.screenshot({ path: info.outputPath("open-book.png"), fullPage: true });
   await page.getByRole("button", { name: "Trang sau", exact: true }).click();
   await expect(page.locator("#page-2")).toBeVisible();
   await expect(page.locator(".book")).toHaveAttribute("data-phase", "idle");

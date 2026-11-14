@@ -1,5 +1,10 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { blockBackgroundMusic } from "./media-helpers";
+
+async function open(page: Page) {
+  await page.getByRole("button", { name: "Trang sau", exact: true }).click();
+  await expect(page.locator(".book")).toHaveAttribute("data-phase", "idle");
+}
 
 test.beforeEach(async ({ page }, info) => {
   test.skip(
@@ -20,6 +25,7 @@ test("320px phone and short landscape layouts retain accessible scrollable pages
     await page.setViewportSize(viewport);
     await page.goto("/");
     await expect(page.locator(".book")).toHaveAttribute("data-ready", "true");
+    await open(page);
     await page.getByRole("link", { name: "Liên hệ", exact: true }).click();
     await expect(page.locator(".book")).toHaveAttribute("data-phase", "idle");
     await expect(page.locator("#page-6")).toBeVisible();
@@ -51,7 +57,7 @@ test("no JavaScript still exposes every source section as a linear document", as
   });
   const page = await context.newPage();
   await page.goto("/");
-  await expect(page.locator(".book-page")).toHaveCount(8);
+  await expect(page.locator(".book-page")).toHaveCount(10);
   for (const section of await page.locator(".book-page").all())
     await expect(section).toBeVisible();
   await expect(page.locator(".noscript-note")).toBeVisible();
@@ -65,6 +71,7 @@ test("pen input follows, reverses to cancel, then commits", async ({
 }) => {
   await page.goto("/");
   await expect(page.locator(".book")).toHaveAttribute("data-mode", "2");
+  await open(page);
   const client = await context.newCDPSession(page);
   const box = await page.locator(".book").boundingBox();
   if (!box) throw new Error("Book not found");
@@ -119,6 +126,7 @@ test("rapid alternating gestures, Escape and blur cancel without stale callbacks
 }) => {
   await page.goto("/");
   await expect(page.locator(".book")).toHaveAttribute("data-ready", "true");
+  await open(page);
   await page
     .getByRole("button", { name: "Trang sau", exact: true })
     .dispatchEvent("click");
@@ -152,6 +160,7 @@ test("unavailable storage does not break navigation or theme", async ({
   });
   await page.goto("/");
   await expect(page.locator(".book")).toHaveAttribute("data-ready", "true");
+  await open(page);
   await page.getByRole("button", { name: "Trang sau", exact: true }).click();
   await expect(page.locator(".book")).toHaveAttribute("data-phase", "idle");
   await expect(page.locator("#page-2")).toBeVisible();
@@ -165,6 +174,7 @@ test("a backward mobile turn does not create horizontal document overflow", asyn
   await page.setViewportSize({ width: 390, height: 700 });
   await page.goto("/");
   await expect(page.locator(".book")).toHaveAttribute("data-mode", "2");
+  await open(page);
   await page.getByRole("button", { name: "Trang sau", exact: true }).click();
   await expect(page.locator(".book")).toHaveAttribute("data-phase", "idle");
   const box = await page.locator(".book").boundingBox();

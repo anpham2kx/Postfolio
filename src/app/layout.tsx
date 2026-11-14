@@ -45,7 +45,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </a>
         {children}
         <noscript>
-          <style>{`.book-page{display:flex!important;position:relative!important;height:auto!important;min-height:500px}.book{display:block!important;height:auto!important}.page-content{overflow:visible!important}.book-controls,.music-player{display:none!important}`}</style>
+          <style>{`.book-page{display:flex!important;position:relative!important;height:auto!important;min-height:500px}.book{display:block!important;height:auto!important;transform:none!important}.book:before,.book:after{display:none!important}.page-content{overflow:visible!important}.book-controls,.music-player{display:none!important}`}</style>
           <p className="noscript-note">
             JavaScript đang tắt. Bạn vẫn có thể đọc đầy đủ nội dung theo chiều
             dọc; form, nhạc nền và hiệu ứng lật sách cần JavaScript.

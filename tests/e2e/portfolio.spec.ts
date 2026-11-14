@@ -5,6 +5,7 @@ import { blockBackgroundMusic } from "./media-helpers";
 async function ready(page: Page) {
   await page.goto("/");
   await expect(page.locator(".book")).toHaveAttribute("data-ready", "true");
+  await page.getByRole("button", { name: "Trang sau", exact: true }).click();
   await expect(page.locator(".book")).toHaveAttribute("data-phase", "idle");
 }
 async function idle(page: Page) {
@@ -81,7 +82,7 @@ test("buttons reach both boundaries in order; rapid inputs do not double-turn", 
   await expect(page.locator(".book")).toHaveAttribute("data-mode", "2");
   await expect(
     page.getByRole("button", { name: "Trang trước", exact: true }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   await page
     .getByRole("button", { name: "Trang sau", exact: true })
     .evaluate((button) => {
@@ -90,7 +91,7 @@ test("buttons reach both boundaries in order; rapid inputs do not double-turn", 
     });
   await idle(page);
   await expect(page.locator(`#page-${step}`)).toBeVisible();
-  for (let index = step * 2; index < 8; index += step) {
+  for (let index = step * 2; index <= 8; index += step) {
     await page.getByRole("button", { name: "Trang sau", exact: true }).click();
     await idle(page);
     await expect(page.locator(`#page-${index}`)).toBeVisible();
@@ -99,7 +100,7 @@ test("buttons reach both boundaries in order; rapid inputs do not double-turn", 
     page.getByRole("button", { name: "Trang sau", exact: true }),
   ).toBeDisabled();
   for (
-    let index = Math.floor(7 / step) * step - step;
+    let index = 6;
     index >= 0;
     index -= step
   ) {
@@ -109,6 +110,9 @@ test("buttons reach both boundaries in order; rapid inputs do not double-turn", 
     await idle(page);
     await expect(page.locator(`#page-${index}`)).toBeVisible();
   }
+  await page.getByRole("button", { name: "Trang trước", exact: true }).click();
+  await idle(page);
+  await expect(page.locator("#page--1")).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Trang trước", exact: true }),
   ).toBeDisabled();
@@ -169,10 +173,10 @@ test("drag follows the pointer, short drag cancels, outside release commits", as
   await drag(page, 18, 150);
   await expect(page.locator(".book")).toHaveAttribute("data-phase", "dragging");
   const transform = await page
-    .locator(".turn-sheet")
+    .locator(".turn-back-wrap")
     .evaluate((node) => (node as HTMLElement).style.transform);
-  expect(transform).toContain("rotateY");
-  expect(transform).not.toBe("rotateY(0deg)");
+  expect(transform).toContain("rotate(");
+  expect(transform).not.toContain("rotate(0deg)");
   await page.mouse.up();
   await idle(page);
   await expect(page.locator("#page-1")).toBeVisible();

@@ -1,6 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPageSound } from "@/lib/page-sound";
+import {
+  computeHardCover,
+  computePaperFold,
+  type PeelCorner,
+} from "@/lib/book-geometry";
 import {
   BookMachine,
   clamp,
@@ -16,36 +22,83 @@ interface Gesture {
   x: number;
   y: number;
   lastX: number;
+  lastY: number;
   lastTime: number;
   velocity: number;
   progress: number;
   direction: Direction | null;
+  corner: PeelCorner;
+  liftRatio: number;
 }
 
-/** All frame updates go to DOM transforms. React renders only at transaction boundaries. */
+interface ActiveTurnDom {
+  hard: boolean;
+  sheet: HTMLElement;
+  frontWrap: HTMLElement;
+  backFlap: HTMLElement;
+  backWrap: HTMLElement;
+  frontShade: HTMLElement;
+  backShade: HTMLElement;
+  castShadow: HTMLElement;
+  underShadow: HTMLElement | null;
+}
+
+/** All frame updates go to DOM transforms/clips. React renders only at transaction boundaries. */
 export function useBook(total: number) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const machineRef = useRef(new BookMachine(total, 1));
+  const machineRef = useRef(new BookMachine(total));
   const offsetsRef = useRef(new Map<number, number>());
   const navigateRef = useRef<(direction: Direction, target?: number) => void>(
     () => {},
   );
   const [snapshot, setSnapshot] = useState({
-    anchor: 1,
+    anchor: -1,
     busy: false,
   });
 
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
+    const pageSound = createPageSound();
     const machine = machineRef.current;
     const pages = Array.from(
       root.querySelectorAll<HTMLElement>(":scope > .book-page"),
     );
+    const pageAt = (index: number) =>
+      pages.find((page) => Number(page.dataset.page) === index);
+    const centerOffset = (anchor: number) =>
+      anchor < 0 ? -25 : anchor >= total ? 25 : 0;
+
+    function stackDepths(spread: number): { left: number; right: number } {
+      if (spread < 0) return { left: 0, right: 10 };
+      if (spread >= total) return { left: 10, right: 0 };
+      const maxSpread = Math.max(total - 2, 2);
+      const ratio = clamp(spread / maxSpread, 0, 1);
+      return {
+        left: 4 + ratio * 6,
+        right: 4 + (1 - ratio) * 6,
+      };
+    }
+
+    function positionBook(anchor: number) {
+      const spread = spreadStart(anchor);
+      const depths = stackDepths(anchor < 0 ? -2 : anchor >= total ? total : spread);
+      root!.style.setProperty("--book-shift", `${centerOffset(anchor)}%`);
+      root!.dataset.cover =
+        anchor < 0 ? "front" : anchor >= total ? "back" : "open";
+      root!.style.setProperty("--left-stack", anchor < 0 ? "0" : "1");
+      root!.style.setProperty("--right-stack", anchor >= total ? "0" : "1");
+      root!.style.setProperty("--left-depth", `${depths.left.toFixed(1)}px`);
+      root!.style.setProperty("--right-depth", `${depths.right.toFixed(1)}px`);
+    }
+
     const layer = root.querySelector<HTMLElement>(".turn-layer");
     if (!layer) return;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let gesture: Gesture | null = null;
+    let activeDom: ActiveTurnDom | null = null;
+    let activeCorner: PeelCorner = "bottom";
+    let activeLiftRatio: number | undefined;
     let frame = 0;
     let generation = 0;
     let disposed = false;
@@ -61,6 +114,7 @@ export function useBook(total: number) {
           busy: machine.phase !== "idle",
         });
     }
+
     function updateScrollCues() {
       for (const page of pages) {
         if (page.hidden) continue;
@@ -72,20 +126,22 @@ export function useBook(total: number) {
           );
       }
     }
+
     function rememberScroll() {
-      // Visibility/resize can run before the browser delivers its queued scroll event.
       for (const page of pages) {
         if (page.hidden) continue;
         const content = page.querySelector<HTMLElement>(".page-content");
         if (content) offsets.set(Number(page.dataset.page), content.scrollTop);
       }
     }
+
     function show(indices: number[]) {
-      pages.forEach((page, index) => {
+      pages.forEach((page) => {
+        const index = Number(page.dataset.page);
         const visible = indices.includes(index);
         page.hidden = !visible;
         page.inert = !visible;
-        page.style.gridColumn = String((index % 2) + 1);
+        page.style.gridColumn = index % 2 === 0 ? "1" : "2";
         page.dataset.side = index % 2 === 0 ? "left" : "right";
         if (visible) {
           const content = page.querySelector<HTMLElement>(".page-content");
@@ -94,20 +150,25 @@ export function useBook(total: number) {
       });
       updateScrollCues();
     }
+
     function sync() {
       root!.dataset.phase = machine.phase;
+      positionBook(machine.anchor);
       const start = spreadStart(machine.anchor);
       show([start, start + 1]);
+      activeDom = null;
       layer!.replaceChildren();
       layer!.hidden = true;
       publish();
     }
+
     function release() {
       const id = gesture?.id;
       gesture = null;
       if (id !== undefined && root!.hasPointerCapture(id))
         root!.releasePointerCapture(id);
     }
+
     function cancel() {
       rememberScroll();
       generation++;
@@ -118,8 +179,9 @@ export function useBook(total: number) {
       release();
       sync();
     }
+
     function clonePage(index: number, side: string) {
-      const source = pages[index];
+      const source = pageAt(index);
       const clone = source
         ? (source.cloneNode(true) as HTMLElement)
         : document.createElement("div");
@@ -137,43 +199,166 @@ export function useBook(total: number) {
         .querySelectorAll("[autofocus]")
         .forEach((node) => node.removeAttribute("autofocus"));
       clone.setAttribute("aria-hidden", "true");
+      const scroller = clone.querySelector<HTMLElement>(".page-content");
+      if (scroller) scroller.scrollTop = offsets.get(index) ?? 0;
       return clone;
     }
-    function prepare() {
+
+    function prepare(corner: PeelCorner = "bottom", liftRatio?: number) {
       const turn = machine.turn;
       if (!turn) return;
       rememberScroll();
+      activeCorner = corner;
+      activeLiftRatio = liftRatio;
+
       const dest = spreadStart(turn.to);
       const forward = turn.direction === 1;
       const outgoing = turn.from + (forward ? 1 : 0);
       const back = dest + (forward ? 0 : 1);
+      const hard = outgoing <= 0 || outgoing >= total - 1;
+
       const sheet = document.createElement("div");
       sheet.className = "turn-sheet";
-      sheet.append(
-        clonePage(outgoing, "turn-front"),
-        clonePage(back, "turn-back"),
-      );
-      layer!.replaceChildren(sheet);
+      sheet.dataset.hard = String(hard);
+      sheet.dataset.direction = forward ? "next" : "prev";
+
+      const frontClone = clonePage(outgoing, "turn-front");
+      const backClone = clonePage(back, "turn-back");
+
+      const frontShade = document.createElement("div");
+      frontShade.className = "turn-shade-overlay turn-front-shade";
+      frontClone.append(frontShade);
+
+      const backShade = document.createElement("div");
+      backShade.className = "turn-shade-overlay turn-back-shade";
+      backClone.append(backShade);
+
+      const frontWrap = document.createElement("div");
+      frontWrap.className = "turn-front-wrap";
+      frontWrap.append(frontClone);
+
+      const backWrap = document.createElement("div");
+      backWrap.className = "turn-back-wrap";
+      backWrap.append(backClone);
+
+      const backFlap = document.createElement("div");
+      backFlap.className = "turn-back-flap";
+      backFlap.append(backWrap);
+
+      const castShadow = document.createElement("div");
+      castShadow.className = "turn-cast-shadow";
+
+      let underShadow: HTMLElement | null = null;
+      if (hard) {
+        const boardEdge = document.createElement("div");
+        boardEdge.className = "turn-board-edge";
+        sheet.append(frontWrap, backFlap, boardEdge);
+
+        underShadow = document.createElement("div");
+        underShadow.className = "turn-under-shadow";
+        const frontCoverTurn = turn.from < 0 || dest < 0;
+        underShadow.dataset.side = frontCoverTurn ? "right" : "left";
+        layer!.replaceChildren(underShadow, sheet);
+      } else {
+        sheet.append(castShadow, frontWrap, backFlap);
+        layer!.replaceChildren(sheet);
+      }
+
       layer!.dataset.direction = forward ? "next" : "prev";
+      layer!.dataset.hard = String(hard);
       layer!.hidden = false;
-      // Keep the opposite old leaf, expose the destination beneath the turning leaf.
-      show(forward ? [turn.from, dest + 1] : [dest, turn.from + 1]);
-      [outgoing, back].forEach((index, face) => {
-        const scroller =
-          sheet.children[face]?.querySelector<HTMLElement>(".page-content");
-        if (scroller) scroller.scrollTop = offsets.get(index) ?? 0;
-      });
+
+      if (turn.from < 0 || dest < 0) {
+        show([1]);
+      } else if (turn.from >= total || dest >= total) {
+        show([total - 2]);
+      } else {
+        show(forward ? [turn.from, dest + 1] : [dest, turn.from + 1]);
+      }
+
+      activeDom = {
+        hard,
+        sheet,
+        frontWrap,
+        backFlap,
+        backWrap,
+        frontShade,
+        backShade,
+        castShadow,
+        underShadow,
+      };
+
       root!.dataset.phase = machine.phase;
+      root!.dataset.cover = "turning";
       publish();
     }
+
     function paint(progress: number) {
-      const sheet = layer!.firstElementChild as HTMLElement | null;
-      if (!sheet || !machine.turn) return;
-      sheet.style.transform = `rotateY(${-machine.turn.direction * progress * 180}deg)`;
-      sheet.style.setProperty(
-        "--turn-shade",
-        String(Math.sin(progress * Math.PI) * 0.16),
+      if (!activeDom || !machine.turn) return;
+      const { from, to, direction } = machine.turn;
+      const dest = spreadStart(to);
+      const p = clamp(progress, 0, 1);
+
+      const shift =
+        centerOffset(from) + (centerOffset(to) - centerOffset(from)) * p;
+      root!.style.setProperty("--book-shift", `${shift.toFixed(3)}%`);
+
+      const fromDepths = stackDepths(from);
+      const toDepths = stackDepths(dest);
+      const leftDepth = fromDepths.left + (toDepths.left - fromDepths.left) * p;
+      const rightDepth =
+        fromDepths.right + (toDepths.right - fromDepths.right) * p;
+
+      root!.style.setProperty(
+        "--left-stack",
+        from < 0 || to < 0 ? "0" : "1",
       );
+      root!.style.setProperty(
+        "--right-stack",
+        from >= total || to >= total ? "0" : "1",
+      );
+      root!.style.setProperty("--left-depth", `${leftDepth.toFixed(1)}px`);
+      root!.style.setProperty("--right-depth", `${rightDepth.toFixed(1)}px`);
+
+      if (activeDom.hard) {
+        const cover = computeHardCover(p, direction, from, dest, total);
+        activeDom.sheet.style.transform = cover.sheetTransform;
+        activeDom.sheet.dataset.angle = cover.angleDeg.toFixed(1);
+        activeDom.frontWrap.style.zIndex = cover.frontZIndex;
+        activeDom.backFlap.style.zIndex = cover.backZIndex;
+        activeDom.frontShade.style.backgroundImage = cover.faceShadeGradient;
+        activeDom.frontShade.style.opacity = cover.faceShadeOpacity;
+        activeDom.backShade.style.backgroundImage = cover.faceShadeGradient;
+        activeDom.backShade.style.opacity = cover.faceShadeOpacity;
+        if (activeDom.underShadow) {
+          activeDom.underShadow.style.opacity = cover.underShadowOpacity;
+        }
+        return;
+      }
+
+      const pageWidth = root!.clientWidth / 2;
+      const pageHeight = root!.clientHeight;
+      const fold = computePaperFold(
+        p,
+        direction,
+        pageWidth,
+        pageHeight,
+        activeCorner,
+        activeLiftRatio,
+      );
+
+      activeDom.sheet.style.transform = "translate3d(0px, 0px, 0px)";
+      activeDom.sheet.dataset.foldAngle = fold.foldAngleDeg.toFixed(2);
+      activeDom.frontWrap.style.clipPath = fold.frontClip;
+      activeDom.backWrap.style.clipPath = fold.backClip;
+      activeDom.backWrap.style.transformOrigin = fold.backOrigin;
+      activeDom.backWrap.style.transform = fold.backTransform;
+      activeDom.backFlap.style.filter = fold.flapDropShadow;
+      activeDom.frontShade.style.backgroundImage = fold.frontShadeGradient;
+      activeDom.frontShade.style.opacity = "1";
+      activeDom.backShade.style.backgroundImage = fold.backShadeGradient;
+      activeDom.backShade.style.opacity = "1";
+      activeDom.castShadow.style.backgroundImage = fold.castShadowGradient;
     }
 
     function finish(commit: boolean, focus: boolean) {
@@ -181,7 +366,7 @@ export function useBook(total: number) {
       const next = commit ? pendingPages.shift() : undefined;
       if (next !== undefined) {
         machine.begin(next > machine.anchor ? 1 : -1, "settling", next);
-        prepare();
+        prepare("bottom");
         paint(0);
         settle(true, 0, focus);
         return;
@@ -190,9 +375,11 @@ export function useBook(total: number) {
       multiTurn = false;
       sync();
       if (focus && commit)
-        pages[machine.anchor]?.focus({ preventScroll: true });
+        pageAt(machine.anchor)?.focus({ preventScroll: true });
     }
+
     function settle(commit: boolean, from: number, focus = false) {
+      if (commit) pageSound.play();
       machine.settle();
       root!.dataset.phase = machine.phase;
       publish();
@@ -201,21 +388,25 @@ export function useBook(total: number) {
       const target = commit ? 1 : 0;
       const duration = motion.matches
         ? 0
-        : Math.max(110, Math.abs(target - from) * (multiTurn ? 320 : 480));
+        : Math.max(110, Math.abs(target - from) * (multiTurn ? 340 : 680));
       if (duration === 0) {
         finish(commit, focus);
         return;
       }
       const start = performance.now();
+      const releaseLift = activeLiftRatio;
       function tick(now: number) {
         if (token !== generation || disposed) return;
         const t = clamp((now - start) / duration, 0, 1);
-        paint(from + (target - from) * (1 - Math.pow(1 - t, 3)));
+        if (releaseLift !== undefined) activeLiftRatio = releaseLift * Math.pow(1 - t, 3);
+        const eased = from + (target - from) * (1 - Math.pow(1 - t, 3));
+        paint(eased);
         if (t < 1) frame = requestAnimationFrame(tick);
         else finish(commit, focus);
       }
       frame = requestAnimationFrame(tick);
     }
+
     function navigate(direction: Direction, target?: number) {
       if (machine.phase !== "idle" || gesture) return;
       const path =
@@ -226,13 +417,13 @@ export function useBook(total: number) {
       if (!machine.begin(turnDirection, "settling", first)) {
         if (target !== undefined) {
           publish();
-          pages[machine.anchor]?.focus({ preventScroll: true });
+          pageAt(machine.anchor)?.focus({ preventScroll: true });
         }
         return;
       }
       pendingPages = path;
       multiTurn = path.length > 0;
-      prepare();
+      prepare("bottom");
       paint(0);
       settle(true, 0, true);
     }
@@ -252,6 +443,7 @@ export function useBook(total: number) {
         return;
       const target = event.target;
       if (!(target instanceof Element)) return;
+      if (!target.closest(".book-page:not([hidden])")) return;
       if (
         target.closest(
           "a, button, input, textarea, select, label, [contenteditable], [data-no-drag], [role='button'], [role='textbox'], [role='slider'], [role='combobox']",
@@ -259,8 +451,6 @@ export function useBook(total: number) {
       )
         return;
       if (event.shiftKey) {
-        // Firefox needs an initial caret for Shift-drag on a fresh document.
-        // Once established, the browser extends the selection natively.
         const selection = window.getSelection();
         if (event.pointerType !== "touch" && selection?.rangeCount === 0) {
           const caret = document.caretPositionFromPoint?.(
@@ -272,7 +462,6 @@ export function useBook(total: number) {
         }
         return;
       }
-      // Keep native scrollbars usable, including when a mouse starts on the thumb.
       const scroller = target.closest<HTMLElement>(".page-content");
       if (scroller && scroller.offsetWidth > scroller.clientWidth) {
         const box = scroller.getBoundingClientRect();
@@ -282,33 +471,37 @@ export function useBook(total: number) {
         )
           return;
       }
-      // The whole page can turn. Shift-drag and multi-click retain native text
-      // selection. Do not prevent pointerdown: that would suppress mousedown,
-      // including the click count needed to recognize double/triple clicks.
+      const rect = root!.getBoundingClientRect();
+      const relY = clamp(
+        (event.clientY - rect.top) / Math.max(rect.height, 1),
+        0,
+        1,
+      );
       gesture = {
         id: event.pointerId,
         x: event.clientX,
         y: event.clientY,
         lastX: event.clientX,
+        lastY: event.clientY,
         lastTime: event.timeStamp,
         velocity: 0,
         progress: 0,
         direction: null,
+        corner: relY < 0.35 ? "top" : "bottom",
+        liftRatio: 0,
       };
     }
+
     function selectText(event: MouseEvent) {
       if (!gesture || gesture.direction) return;
       if (event.detail > 1) release();
-      // Stop native mouse selection capture before it starts. In Firefox it can
-      // survive a resize when the release lands outside the resized viewport.
-      // Shift and interactive controls never create a gesture, so stay native.
       else event.preventDefault();
     }
+
     function nativeDrag(event: DragEvent) {
-      // Images and selected text otherwise start HTML drag-and-drop and cancel
-      // the pointer stream before the page has a chance to follow the hand.
       if (gesture) event.preventDefault();
     }
+
     function dragClick(event: MouseEvent) {
       if (suppressDragClick && event.detail > 0) {
         suppressDragClick = false;
@@ -316,6 +509,7 @@ export function useBook(total: number) {
         event.stopPropagation();
       }
     }
+
     function move(event: PointerEvent) {
       if (!gesture || gesture.id !== event.pointerId) return;
       if (event.pointerType !== "touch" && (event.buttons & 1) === 0) {
@@ -342,7 +536,7 @@ export function useBook(total: number) {
         if (selection?.anchorNode && root!.contains(selection.anchorNode))
           selection.removeAllRanges();
         root!.setPointerCapture(event.pointerId);
-        prepare();
+        prepare(gesture.corner, 0);
       }
       if (event.cancelable) event.preventDefault();
       const elapsed = event.timeStamp - gesture.lastTime;
@@ -350,14 +544,23 @@ export function useBook(total: number) {
         gesture.velocity =
           (-(event.clientX - gesture.lastX) * gesture.direction) / elapsed;
       gesture.lastX = event.clientX;
+      gesture.lastY = event.clientY;
       gesture.lastTime = event.timeStamp;
+
       const distance = -dx * gesture.direction;
       const width = root!.clientWidth / 2;
-      gesture.progress = clamp(distance / Math.max(width * 0.8, 1), 0, 1);
+      const height = Math.max(root!.clientHeight, 1);
+      gesture.progress = clamp(distance / Math.max(width * (activeDom?.hard ? 0.8 : 2), 1), 0, 1);
+      const verticalDelta =
+        gesture.corner === "bottom" ? -dy / height : dy / height;
+      gesture.liftRatio = clamp(verticalDelta, 0.002, 0.95);
+      activeLiftRatio = gesture.liftRatio;
+
       cancelAnimationFrame(frame);
       const progress = gesture.progress;
       frame = requestAnimationFrame(() => paint(progress));
     }
+
     function up(event: PointerEvent) {
       if (!gesture || gesture.id !== event.pointerId) return;
       if (!gesture.direction) {
@@ -371,13 +574,11 @@ export function useBook(total: number) {
         recentVelocity,
         -(event.clientX - x) * direction,
       );
-      // Clear before releasing capture, so lostpointercapture cannot cancel a settling turn.
       release();
       settle(commit, progress);
     }
+
     function pointerCancel(event: PointerEvent) {
-      // Touch has implicit capture on its initial target. Transferring it to the
-      // stable book root emits lostpointercapture on that old target; ignore it.
       if (
         event.type === "lostpointercapture" &&
         (event.target !== root || root!.hasPointerCapture(event.pointerId))
@@ -385,6 +586,7 @@ export function useBook(total: number) {
         return;
       if (gesture?.id === event.pointerId) cancel();
     }
+
     function key(event: KeyboardEvent) {
       const target = event.target;
       if (
@@ -419,6 +621,7 @@ export function useBook(total: number) {
         if (!event.repeat) navigate(event.key === "ArrowRight" ? 1 : -1);
       }
     }
+
     function track(event: Event) {
       const element = event.target;
       if (!(element instanceof Element)) return;
@@ -432,9 +635,18 @@ export function useBook(total: number) {
       machine.focus(index);
       if (before !== machine.anchor) publish();
     }
+
     function click(event: MouseEvent) {
       if (!(event.target instanceof Element)) return;
       const link = event.target.closest<HTMLAnchorElement>("a[data-book-page]");
+      if (
+        !link &&
+        event.target.closest(".outer-cover") &&
+        !window.getSelection()?.toString().trim()
+      ) {
+        navigate(machine.anchor < 0 ? 1 : -1);
+        return;
+      }
       if (
         !link ||
         event.ctrlKey ||
@@ -447,6 +659,7 @@ export function useBook(total: number) {
       const target = Number(link.dataset.bookPage);
       navigate(target >= machine.anchor ? 1 : -1, target);
     }
+
     let previousWidth = -1;
     let previousHeight = -1;
     function resize() {
@@ -456,11 +669,14 @@ export function useBook(total: number) {
       previousWidth = width;
       previousHeight = height;
       cancel();
-      // Keep focus on the actual reading page, if a hidden leaf held focus.
       const active = document.activeElement;
-      if (active instanceof HTMLElement && active.closest(".book-page[hidden]"))
-        pages[machine.anchor]?.focus({ preventScroll: true });
+      if (
+        active instanceof HTMLElement &&
+        active.closest(".book-page[hidden]")
+      )
+        pageAt(machine.anchor)?.focus({ preventScroll: true });
     }
+
     const observer = new ResizeObserver(resize);
     observer.observe(root);
     const contentObserver = new ResizeObserver(updateScrollCues);
@@ -492,6 +708,7 @@ export function useBook(total: number) {
     motion.addEventListener("change", cancel);
     return () => {
       disposed = true;
+      pageSound.dispose();
       cancel();
       observer.disconnect();
       contentObserver.disconnect();

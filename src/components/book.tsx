@@ -14,6 +14,8 @@ export function Book({ children }: { children: ReactNode }) {
   const contentTotal = pageTitles.length - 2;
   const firstContent = Math.max(1, start);
   const lastContent = Math.min(last - 1, contentTotal);
+  const frontClosed = snapshot.anchor < 0;
+  const backClosed = snapshot.anchor >= pageTitles.length;
 
   useEffect(() => {
     const query = window.matchMedia("(prefers-color-scheme: dark)");
@@ -93,7 +95,7 @@ export function Book({ children }: { children: ReactNode }) {
             <button
               className="page-arrow page-arrow-prev"
               onClick={() => navigate(-1)}
-              disabled={start === 0 || snapshot.busy}
+              disabled={frontClosed || snapshot.busy}
               aria-label="Trang trước"
             >
               <Icon name="arrowLeft" />
@@ -104,22 +106,22 @@ export function Book({ children }: { children: ReactNode }) {
                 aria-atomic="true"
                 className="page-count"
               >
-                {String(firstContent).padStart(2, "0")}
-                {lastContent > firstContent && (
+                {frontClosed ? "Bìa trước" : backClosed ? "Bìa sau" : String(firstContent).padStart(2, "0")}
+                {!frontClosed && !backClosed && lastContent > firstContent && (
                   <> — {String(lastContent).padStart(2, "0")}</>
                 )}
-                <span> / {String(contentTotal).padStart(2, "0")}</span>
+                {!frontClosed && !backClosed && <span> / {String(contentTotal).padStart(2, "0")}</span>}
               </span>
               <div className="progress-track" aria-hidden="true">
                 <span
-                  style={{ width: `${(lastContent / contentTotal) * 100}%` }}
+                  style={{ width: `${frontClosed ? 0 : backClosed ? 100 : (lastContent / contentTotal) * 100}%` }}
                 />
               </div>
             </div>
             <button
               className="page-arrow page-arrow-next"
               onClick={() => navigate(1)}
-              disabled={last === pageTitles.length || snapshot.busy}
+              disabled={backClosed || snapshot.busy}
               aria-label="Trang sau"
             >
               <Icon name="arrowRight" />
@@ -129,7 +131,8 @@ export function Book({ children }: { children: ReactNode }) {
         <p className="sr-only" id="book-instructions">
           Dùng phím mũi tên, vuốt hoặc kéo ngang trên sách để lật trang. Giữ
           Shift và kéo hoặc nhấp đúp để chọn chữ. Liên kết, nút bấm và ô nhập
-          liệu hoạt động bình thường. Nhấn Escape để hủy.
+          liệu hoạt động bình thường. Bấm bìa hoặc dùng mũi tên để mở sách.
+          Lật về trước trang đầu hoặc sau trang cuối để đóng bìa. Nhấn Escape để hủy.
         </p>
       </main>
       <footer className="site-footer">

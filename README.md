@@ -115,7 +115,7 @@ docs/
 
 `book-machine.ts` là nguồn trạng thái duy nhất: `anchor` là trang đang đọc, mỗi cặp luôn gồm hai trang, `phase` là `idle → dragging/settling → idle`. `begin()` khóa đồng bộ nên thao tác nhanh không tạo nhiều transaction chồng nhau. Input mới trong khi đang chuyển bị bỏ qua có chủ đích; không xếp hàng thao tác bấm lặp. Với một lệnh chuyển nhanh, `turnPath()` tạo đường đi qua từng trang/cặp trang ở giữa, rồi hook chạy tuần tự các tờ trong cùng một khóa điều hướng. Nút điều hướng bị disabled đúng lúc và tại biên đầu/cuối.
 
-Một lần nhảy xa dùng khoảng 320 ms/tờ, lần lật đơn khoảng 480 ms. Ví dụ đi từ trang giới thiệu đến liên hệ trên desktop lật ba tờ; đến dự án, các trang trung gian xuất hiện trên hai mặt tờ giấy. Chỉ focus trang đích sau khi xong cả chuỗi. Hủy/resize xóa phần chuỗi chưa chạy và giữ trang đã lật xong gần nhất. `prefers-reduced-motion` hoàn tất ngay.
+Một lần nhảy xa dùng khoảng 340 ms/tờ, lần lật đơn khoảng 680 ms. Ví dụ đi từ trang giới thiệu đến liên hệ trên desktop lật ba tờ; đến dự án, các trang trung gian xuất hiện trên hai mặt tờ giấy. Chỉ focus trang đích sau khi xong cả chuỗi. Hủy/resize xóa phần chuỗi chưa chạy và giữ trang đã lật xong gần nhất. `prefers-reduced-motion` hoàn tất ngay.
 
 `ResizeObserver` theo dõi kích thước thực của sách để hủy thao tác đang diễn ra nếu hình học thay đổi. Trang đang focus/chạm/cuộn được ghi nhận vào `anchor`; resize giữ nguyên cặp trang và dữ liệu form. Không còn logic chuyển sang một trang. Resize, pointercancel, mất capture thật, Escape, mất focus cửa sổ và tab bị ẩn đều hủy transaction về vị trí ổn định. RAF cũ được vô hiệu bằng generation token.
 
@@ -135,7 +135,7 @@ Các trang thật được mount một lần. Trang không hiển thị dùng `h
 - `prefers-reduced-motion` bỏ animation tự chạy/settle, lá rơi và quay đĩa; pointer drag vẫn bám tay. Không có spinner quay khi giảm chuyển động.
 - Phím trái/phải không can thiệp input, textarea, select, contenteditable, IME, modifier keys hoặc khi đang chọn văn bản. Escape hủy lật. Nút bấm vẫn dùng được khi không dùng gesture.
 - Focus visible, skip link, nhãn vùng/trang, aria-live cho số trang và trạng thái gửi, error description cho form, nội dung ẩn không nằm trong tab order.
-- Theme theo hệ thống ở lần đầu và lưu lựa chọn; không phụ thuộc localStorage để app hoạt động. Khi tắt JavaScript, 8 trang hiển thị thành tài liệu dọc; form/animation cần JS.
+- Theme theo hệ thống ở lần đầu và lưu lựa chọn; không phụ thuộc localStorage để app hoạt động. Khi tắt JavaScript, 10 mặt (8 trang bên trong và 2 bìa ngoài) hiển thị thành tài liệu dọc; form/animation cần JS.
 
 ## Kiểm tra
 
@@ -154,7 +154,7 @@ Nếu npm bỏ sót native optional dependency của Vitest trên Windows, chạ
 
 Phạm vi đã thực hiện và giới hạn còn lại được ghi tại [docs/TESTING.md](docs/TESTING.md). Mô phỏng viewport không thay thế thiết bị vật lý; không cam kết mọi trình duyệt hay thiết bị đều có trải nghiệm giống nhau.
 
-Bản cập nhật đạt TypeScript, lint, production build, **34 unit test và 105 E2E**; 3 bài CDP touch bỏ qua đúng phạm vi. Chi tiết tại [docs/TESTING.md](docs/TESTING.md). Có thể xem [ảnh desktop](docs/screenshots/chromium-desktop-light.png) và [ảnh điện thoại](docs/screenshots/chromium-phone-light.png).
+Kết quả kiểm tra được ghi theo từng lần cập nhật tại [docs/TESTING.md](docs/TESTING.md). Ảnh cơ chế sách mới: [bìa đóng](docs/screenshots/book-front.png), [đang mở bìa](docs/screenshots/book-opening.png), [giấy đang lật](docs/screenshots/book-paper-turn.png).
 
 ## Chủ đề theo mùa
 
@@ -171,3 +171,13 @@ Tuyết/hoa tuyết và dây đèn không nhận pointer events; giảm số h�
 Kiểm tra bản chủ đề: TypeScript, ESLint, 34 unit tests và production build đạt. 33 ca trình duyệt về giao diện mùa, nhạc và kéo sách đạt trên Chromium desktop/tablet/phone mô phỏng; Halloween cũng build và qua ca giao diện desktop. Đã xem ảnh chụp cả ba kích thước. Chưa kiểm tra mùa mới trên thiết bị vật lý hoặc Firefox/Safari. Playwright trên Windows cần dừng tiến trình runner ở bước dọn server sau khi các ca đã báo đạt.
 
 Tài nguyên Giáng sinh: background WebP khoảng 436 KB; MP3 64 kbps khoảng 87,9 MB, giữ nguyên thời lượng 10.981 giây của bản gốc. Bản nén có giảm chất lượng so với file gốc; file gốc ở thư mục gốc không bị sửa. Đã kiểm tra phát/dừng bản MP3 cuối.
+
+## Sách có bìa đóng/mở
+
+Sách khởi đầu bằng một bìa trước ở giữa. Bấm bìa, mũi tên phải hoặc kéo/vuốt sang trái để mở. Khi mở vẫn đọc hai trang trên mọi kích thước; mũi tên trái ở spread đầu khép bìa trước, mũi tên phải ở spread cuối khép bìa sau. Bấm bìa sau hoặc lật ngược để mở lại. Nút logo trở về phần giới thiệu qua các tờ trung gian.
+
+`book-machine.ts` quản lý một chuỗi trạng thái duy nhất: bìa trước `-1`, các trang hiện có `0..7`, bìa sau `8`. `use-book.ts` điều khiển cùng giao dịch lật cho cả bìa và giấy: bìa cứng quay 180°, giấy cong bằng các dải 3D liên tục (ít dải hơn trên màn hình nhỏ), đồng thời dịch gáy để bìa đóng luôn nằm giữa. Không còn nút đóng/mở bằng cách kéo giãn bìa ra cả spread. Các trang thật vẫn được giữ trong DOM để bảo toàn bản nháp và vị trí cuộn; lớp chuyển động chỉ chứa bản sao inert và aria-hidden.
+
+`physical-book.spec.ts` kiểm tra hình học bìa, mở/khép hai đầu, kéo/hủy, resize, nhập nhanh, giữ bản nháp và reduced motion. Các test nội dung cũ mở bìa trước khi kiểm tra phần ruột sách. Đây là cơ chế mô phỏng riêng lấy cảm hứng từ Heyzine, không nhúng viewer Heyzine. Công cụ xem trực tiếp mẫu không hoạt động trong phiên thực hiện nên chưa xác nhận khớp từng khung hình với link tham khảo.
+
+Kiểm tra bản bìa ngày 13/11/2026: TypeScript, lint, 35 unit test và production build đạt. Bộ E2E cuối đạt 63 ca, bỏ qua 3 ca CDP touch ngoài Chromium, không thất bại. Chạy trên Chromium desktop/tablet/phone, Firefox desktop và WebKit desktop/phone mô phỏng; chưa thử trên thiết bị vật lý. Xem phạm vi và giới hạn cụ thể trong [docs/TESTING.md](docs/TESTING.md).

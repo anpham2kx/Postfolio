@@ -9,6 +9,8 @@ test.beforeEach(async ({ page }) => {
   await blockBackgroundMusic(page);
   await page.goto("/");
   await expect(page.locator(".book")).toHaveAttribute("data-ready", "true");
+  await page.getByRole("button", { name: "Trang sau", exact: true }).click();
+  await expect(page.locator("#page-1")).toBeVisible();
   await idle(page);
   await page.evaluate(() => document.fonts.ready);
 });
@@ -38,9 +40,9 @@ test("mouse turns from cover text, body text, image, whitespace and footer", asy
       "data-phase",
       "dragging",
     );
-    await expect(page.locator(".turn-sheet")).toHaveCSS(
+    await expect(page.locator(".turn-back-wrap")).toHaveCSS(
       "transform",
-      /matrix3d/,
+      /matrix/,
     );
     await page.mouse.up();
     await idle(page);

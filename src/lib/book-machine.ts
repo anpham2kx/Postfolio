@@ -17,7 +17,7 @@ export function adjacentPage(
   direction: Direction,
   total: number,
 ): number {
-  return clamp(spreadStart(anchor) + direction * 2, 0, spreadStart(total - 1));
+  return clamp(spreadStart(anchor) + direction * 2, -1, total);
 }
 
 /** Visit every intervening leaf/spread, retaining the exact requested reading page. */
@@ -26,7 +26,7 @@ export function turnPath(
   target: number,
   total: number,
 ): number[] {
-  const destination = clamp(target, 0, total - 1);
+  const destination = clamp(target, -1, total);
   const start = spreadStart(anchor);
   const end = spreadStart(destination);
   if (start === end) return [destination];
@@ -55,14 +55,14 @@ export function shouldCommit(
 
 /** Synchronous lock: repeated input cannot create overlapping turn transactions. */
 export class BookMachine {
-  anchor = 0;
+  anchor = -1;
   phase: TurnPhase = "idle";
   turn: Turn | null = null;
   constructor(
     readonly total: number,
-    initialPage = 0,
+    initialPage = -1,
   ) {
-    this.anchor = clamp(initialPage, 0, total - 1);
+    this.anchor = clamp(initialPage, -1, total);
   }
   begin(
     direction: Direction,
@@ -74,7 +74,7 @@ export class BookMachine {
     const to =
       target === undefined
         ? adjacentPage(this.anchor, direction, this.total)
-        : clamp(target, 0, this.total - 1);
+        : clamp(target, -1, this.total);
     if (spreadStart(to) === from) {
       this.anchor = to;
       return null;

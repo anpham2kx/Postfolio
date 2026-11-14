@@ -21,6 +21,7 @@ test.beforeEach(async ({ page }) => {
   await blockBackgroundMusic(page);
   await page.goto("/");
   await expect(page.locator(".book")).toHaveAttribute("data-ready", "true");
+  await page.getByRole("button", { name: "Trang sau", exact: true }).click();
   await idle(page);
 });
 
@@ -73,7 +74,7 @@ test("compact white paper, brown cover, one-line name and arrow navigation", asy
       await page
         .locator("#page-1")
         .evaluate((node) => getComputedStyle(node).backgroundColor),
-    ).toBe("rgb(255, 255, 255)");
+    ).toBe(process.env.NEXT_PUBLIC_SITE_THEME === "halloween" ? "rgb(255, 255, 255)" : "rgb(255, 253, 247)");
   }
   await page.getByRole("link", { name: "Liên hệ", exact: true }).click();
   await idle(page);
@@ -124,28 +125,29 @@ test("Escape or resize cancels a jump queue at the last completed sheet", async 
   await page.clock.install({ time: 0 });
   await page.reload();
   await expect(page.locator(".book")).toHaveAttribute("data-ready", "true");
+  await page.getByRole("button", { name: "Trang sau", exact: true }).click();
   await idle(page);
   await page.clock.pauseAt(60000);
   await page.getByRole("link", { name: "Liên hệ", exact: true }).click();
   // The second animated sheet proves that one turn has already committed.
   await page.clock.runFor(360);
-  await expect(page.locator(".turn-front")).toHaveAttribute("data-page", "3");
+  await expect(page.locator(".turn-front").first()).toHaveAttribute("data-page", "3");
   await page.keyboard.press("Escape");
   await idle(page);
   await expect(page.locator("#page-2")).toBeVisible();
   await page
     .getByRole("button", { name: "Phạm Thanh An — về trang đầu" })
     .click();
-  await page.clock.runFor(600);
+  await page.clock.runFor(720);
   await idle(page);
   await page.getByRole("link", { name: "Liên hệ", exact: true }).click();
   await page.clock.runFor(360);
-  await expect(page.locator(".turn-front")).toHaveAttribute("data-page", "3");
+  await expect(page.locator(".turn-front").first()).toHaveAttribute("data-page", "3");
   await page.setViewportSize({ width: 320, height: 568 });
   await idle(page);
   await expect(page.locator("#page-2")).toBeVisible();
   await page.getByRole("button", { name: "Trang sau", exact: true }).click();
-  await page.clock.runFor(600);
+  await page.clock.runFor(720);
   await idle(page);
   await expect(page.locator("#page-4")).toBeVisible();
 });

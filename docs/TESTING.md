@@ -1,5 +1,20 @@
 # Kiểm thử và phạm vi hỗ trợ
 
+## Cập nhật cơ chế bìa và giấy — 13/11/2026
+
+- `npm run check`: TypeScript, ESLint, **35 unit test**, production build đều đạt.
+- Lượt E2E cuối trên bản build cuối: **63 đạt, 3 bỏ qua, 0 thất bại**, không retry. Lệnh: `npx playwright test physical-book.spec.ts compact-book.spec.ts resilience.spec.ts --reporter=line`.
+- Sáu cấu hình: Chromium desktop/tablet/phone, Firefox desktop, WebKit desktop/phone. Ba ca bỏ qua là touch qua CDP trên Firefox/WebKit vì CDP chỉ có trên Chromium. Touch trên Chromium dùng sự kiện cảm ứng của trình duyệt; bút dùng sự kiện tổng hợp trong bài resilience.
+- Đã kiểm tra bìa trước/sau nằm giữa khi đóng; mở thành hai trang; đóng/mở ở cả hai đầu; không vượt giới hạn; kéo bìa theo tay, kéo ngắn hủy, thả ngoài sách; giấy cong; resize/Escape/blur hủy thao tác; nhảy qua từng tờ; nhập nhanh không chồng giao dịch; giữ bản nháp form; reduced motion; đọc nội dung dài và không tràn ngang; trang vẫn đọc được khi tắt JS.
+- Đã xem ảnh desktop, tablet và điện thoại mô phỏng, gồm trạng thái đóng/mở và giữa chuyển động. Ảnh minh họa: [bìa trước](screenshots/book-front.png), [mở bìa](screenshots/book-opening.png), [giấy cong](screenshots/book-paper-turn.png).
+- Trước chỉnh cuối về chồng mép dải giấy, bộ `physical-book`, `full-page-drag`, `seasonal-theme`, `portfolio` đã đạt **66 ca** trên ba cấu hình Chromium; gồm liên kết/nội dung, chọn chữ, cuộn dọc/cảm ứng, form EmailJS giả lập và axe. Không cộng số này vào 63 ca của lượt cuối.
+
+Giới hạn: Firefox bị crash trước khi mở trang trong sandbox; chạy ngoài sandbox đã đạt. WebKit headless trên Windows không thay thế Safari/iPhone thật. Chưa kiểm thử thiết bị vật lý, chất lượng chuyển động trên máy cấu hình thấp, hay gửi email thật. Không chạy lại toàn bộ bộ test nhạc/mùa cũ trong thay đổi này. Không xem tương tác trực tiếp được link Heyzine trong phiên thực hiện, nên chưa xác nhận mức khớp hình ảnh/chuyển động từng khung hình; đây là renderer riêng, không nhúng engine Heyzine.
+
+Các phần dưới là biên bản **lịch sử trước thay đổi bìa**, không phải kết quả của lượt kiểm tra mới.
+
+---
+
 Ngày kiểm tra: **22/10/2026, Asia/Saigon**. Mã nguồn chạy tại `C:\VibeCode\profolio`.
 
 ## Kết quả lượt xác nhận cuối

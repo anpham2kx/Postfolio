@@ -48,13 +48,13 @@ function Paper({
       data-page={index}
       tabIndex={-1}
       aria-label={
-        cover ? pageTitles[index] : `Trang ${index}: ${pageTitles[index]}`
+        cover ? (index < 0 ? "Bìa trước" : index === pageTitles.length ? "Bìa sau" : pageTitles[index]) : `Trang ${index}: ${pageTitles[index]}`
       }
     >
       <div
         className="page-content"
         tabIndex={0}
-        aria-label={`Nội dung ${pageTitles[index]}, có thể cuộn`}
+        aria-label={cover ? "Bìa sách" : `Nội dung ${pageTitles[index]}, có thể cuộn`}
       >
         <div className="page-inner">{children}</div>
       </div>
@@ -73,7 +73,7 @@ function Paper({
 
 function Cover({ index }: { index: number }) {
   return (
-    <Paper index={index} className="book-cover" cover>
+    <Paper index={index} className={`book-cover ${index === -1 || index === pageTitles.length ? "outer-cover" : "inner-cover"}`} cover>
       <div className="cover-border">
         <Icon name="book" size={28} />
         <p className="cover-label">PORTFOLIO</p>
@@ -107,6 +107,7 @@ function SocialLinks() {
 export function BookPages() {
   return (
     <>
+      <Cover index={-1} />
       <Cover index={0} />
 
       <Paper index={1} className="intro-page">
@@ -266,6 +267,7 @@ export function BookPages() {
         </Jump>
       </Paper>
       <Cover index={7} />
+      <Cover index={pageTitles.length} />
     </>
   );
 }
